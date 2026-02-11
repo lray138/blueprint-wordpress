@@ -1,0 +1,6 @@
+{
+    "require": {
+        "htmlburger/carbon-fields": "^3.6",
+        "lray138/g2": "^0.1.5"
+    }
+}
