@@ -216,17 +216,19 @@ function handleSectionPartial(Kvm $partial): Str {
     if($partial->prop('_type') === 'file') {
         $partial = $partial->set('_type', Str::of('file'));
     }
-
+   
     $callable = $partial
         ->prop('_type')
         //->map("ucfirst")
         ->prepend("handle_");
 
+
+
     // this was original demo method and the ultimate override
     if(function_exists($callable->get())) {
         return $callable->get()($partial);
     }
-    
+
     $controller = $partial->prop('_type')->wrap("handle_", "_data")->get();
     if(function_exists($controller)) {
         $partial = $controller($partial); // partial is already a Kvm
@@ -407,9 +409,13 @@ function renderPageContent($page_id) {
                         }
                     }
 
-                    $c = getPartialCallable(Str::of($section["partial_path"]))
-                        ->get();
-                    return $c($data);
+                    return getPartialCallable(Str::of($section["partial_path"]))
+                        ->fold(
+                            fn() => "",
+                            fn(callable $c) => $c($data)
+                        );
+
+                    //return $c($data);
                     break;
                 case "page_content":
 
@@ -421,7 +427,6 @@ function renderPageContent($page_id) {
                         "page_template" => $slug,
                     ]);
                
-                    
                     break;
                 case "partial_page":
                     $id = $section["partial_pages"][0]["id"];

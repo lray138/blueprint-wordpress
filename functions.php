@@ -1,6 +1,7 @@
 <?php
 
 use lray138\G2\Lst;
+use function lray138\G2\dump;
 
 require "vendor/autoload.php";
 
@@ -9,6 +10,11 @@ require_once get_template_directory() . '/inc/admin/allow-year-pages.php';
 require_once get_template_directory() . '/inc/helpers.php';
 require_once get_template_directory() . '/inc/partials.php';
 require_once get_template_directory() . '/inc/admin/clone-carbon-page.php';
+
+function renderBlogBgCardList(Lst $pages) {
+    dump($pages);
+    die;
+}
 
 /**
  * Allow SVG uploads for administrators only.

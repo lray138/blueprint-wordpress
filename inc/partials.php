@@ -1,6 +1,6 @@
 <?php
 
-use lray138\G2\{Kvm, Str, Lst, Num, Maybe};
+use lray138\G2\{Kvm, Str, Lst,Nil, Num, Maybe};
 use function lray138\g2\dump;
 
 function handle_partial_page(Kvm $partial_page): Str {
@@ -38,7 +38,7 @@ function handle_partial_page_id(Kvm $partial_page_id): Str {
         // 
         $lst = Lst::of(array_values($meta));
         $attributes = handleAttributesField($lst)->get();
-    } 
+    }
  
     $partial_element = isset($attributes["element"]) 
         ? $attributes["element"]
@@ -224,6 +224,24 @@ function handle_span(Kvm $span): Str {
         ->getOrElse("");
 
     $partials = $span->prop('items');
+
+    if($partials instanceof Nil || is_null($partials)) {
+        if($span->prop('text')->get()) {
+            $content = $span->prop('text');
+        } else {
+            $content = "";
+        }
+    } else {
+        $content = concatPartials($partials);
+    }
+    
+    return Str::of("<span {$attributes}>{$content}</span>");
+
+
+    /*
+
+        $partials = $span->prop('items');
+    
     if(is_null($partials)) {
         if($span->prop('text')->get()) {
             $content = $span->prop('text');
@@ -235,6 +253,8 @@ function handle_span(Kvm $span): Str {
     }
     
     return Str::of("<span {$attributes}>{$content}</span>");
+
+    */
 };
 
 function handle_text(Kvm $text): Str {
@@ -308,5 +328,11 @@ function handle_query_render(Kvm $partial): Str {
         )
         ->getOrElse(Str::of(""));
 
-    return $out;
+    if($out instanceof Lst) {
+        return Str::of(" no pipeline funcs");
+    }
+
+    // needed to wrap after G2 prop/mprop/raw update
+
+    return Str::of($out);
 }
