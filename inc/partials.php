@@ -291,7 +291,14 @@ function handle_partial_callable(Kvm $partial): Str {
 function tryPartial($partial, $args = []): Maybe {
     $out = getPartialCallable(Str::of($partial))
         ->map(fn($callable) => Str::of($callable($args)));
+
     return $out;
+}
+
+function tryPartial2($partial) {
+    return function($args) use ($partial) {
+        return tryPartial($partial, $args);
+    };
 }
 
 function handle_query_render(Kvm $partial): Str {
