@@ -1,0 +1,12 @@
+<?php
+# start use
+# end use
+
+return function($data = []) { 
+	# start data processing
+    extract($data);
+    # end data processing
+	return "<div class=\"card\"><div class=\"card-header\">Metro</div><img src=\"/img/blueprint/covers/get-in-loser.jpg\" class=\"img-fluid\" alt=\"...\"/><div class=\"card-body\"><h5 class=\"card-title\">Card title</h5><p class=\"card-text\">Some quick example text to build on the card title and make up the bulk of the card’s content.</p><a href=\"#\" class=\"card-link\">Card link</a><a href=\"#\" class=\"card-link\">Another link</a></div><div class=\"card-footer\"><span class=\"btn btn-sm btn-outline-secondary\">Skyline</span><span class=\"btn btn-sm btn-outline-secondary\">GA Tech</span><span class=\"btn btn-sm btn-outline-secondary\">Traffic</span></div></div>";
+};
+
+# src: 

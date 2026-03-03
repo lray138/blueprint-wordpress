@@ -1,10 +1,10 @@
 <?php
 
-use lray138\G2\{Kvm, Str, Lst, Num, Maybe};
+use lray138\G2\{Kvm, Str, Lst, Num, Maybe, Boo};
 use function lray138\g2\dump;
 
 function getOuterWrappers(Lst $attrs): Lst {
-
+    
     return $attrs
         ->filter(fn($x) => $x["_type"] == "wrap" && $x["wrap_type"] == "outer")
         //->filter(fn($x) => $x["wrap_type"] == "outer")
@@ -102,15 +102,36 @@ function handlePageSection( Kvm $section ): Str {
         "content" => concatSectionPartials($section),
     ]));
 
+    // adding the return type since it's jsut 3 letters makes sense to me
+    // as we round out this architecture.
     $outer_wrappers = getOuterWrappers($section->prop($attrs_id));
     if($outer_wrappers->count()->get() > 0) {
-        return $outer_wrappers
+        $partials = $outer_wrappers
             ->reduce(function($c, $x) {
                 $attrs = isset($x["attrs"]) ? " " . $x["attrs"] : "";
                 $el = $x["element"];
                 return $c->wrap("<{$el}{$attrs}>", "</{$el}>");
             }, $partials);
     }
+
+    $t = $section->prop("section_attrs")
+        ->filter(fn($x) =>
+            ($x["wrap_type"] ?? null) === "outer"
+            && Kvm::of($x)->prop("wrap_attrs")
+                ->any(fn($a) => ($a["_type"] ?? null) === "partial_path")->isTrue()
+        )  
+        ->reduce(function($carry, $partial) {
+                return Kvm::of($partial)
+                    ->prop("wrap_attrs")
+                    ->filter(fn($x) => $x["_type"] == "partial_path")
+                    ->map(function($x) use ($carry) {
+                        $t = tryPartial("components/wrap/" . $x["partial_path"], [
+                            "content" => $carry
+                        ]);
+                        return $t->getOrElse("Wrap not found");
+                    })
+                    ->join("");
+            }, $partials);
 
     return $partials;
 }
@@ -160,8 +181,14 @@ function concatPartials(Lst $partials): Str {
 }
 
 // the "_type" i.e. partial name
-function getPartialCallable(Str $type): Maybe {
+function getPartialCallable(Str $type, ?Str $src = null): Maybe {
 
+    $src = $src ?? Str::mempty();
+    $try = $src->prepend(dirname(__DIR__,3) . "/")->append("/partials/")->append($type)->get();
+
+    if(file_exists($try)) {
+        return Maybe::just((include $try));
+    }
 
     $callable_path  = $type->contains("/")
         ->fold(
@@ -169,6 +196,7 @@ function getPartialCallable(Str $type): Maybe {
             fn() => $type->append(".php")
         );
 
+    // not sure about this
     if($callable_path == "header/index.php") {
         $callable_path = Str::of("header.php");
     }
@@ -368,8 +396,8 @@ function getHeaderClassExtras($config_items): string {
     return "";
 }
 
-function renderPageContent($page_id) {
-
+function renderPageContent($page_id, $globals = []) {
+    
     // check head options
 
     // check header option
@@ -390,9 +418,10 @@ function renderPageContent($page_id) {
     }
 
     // NOT OBVIOUS WTF IS GOING ON 
+    // looks like we're ... sections could be akin to "slots" I do like that term in this context.
     return Lst::of(carbon_get_post_meta(get_config_page($slug)->ID, "template_sections"))
-        ->map(function($section) use ($config_items, $page_id, $slug) {
-
+        ->map(function($section) use ($config_items, $page_id, $slug, $globals) { 
+            
             switch($section["_type"]) {
                 case "partial_path":
                     $data = [];
@@ -409,10 +438,10 @@ function renderPageContent($page_id) {
                         }
                     }
 
-                    return getPartialCallable(Str::of($section["partial_path"]))
+                    return getPartialCallable(Str::of($section["partial_path"]), Str::of($section["partial_src"]))
                         ->fold(
                             fn() => "",
-                            fn(callable $c) => $c($data)
+                            fn(callable $c) => $c(array_merge($globals, $data))
                         );
 
                     //return $c($data);

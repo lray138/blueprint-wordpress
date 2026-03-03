@@ -50,7 +50,11 @@ return function($data = []) {
     ])->getOrElse("");
     
     # end data processing
-	return "<nav aria-label=\"breadcrumb\" class=\"container\">{$list}</nav>";
+	return "<nav aria-label=\"breadcrumb\" class=\"\">{$list}</nav><style>
+    me ol {
+        font-size: .85em;
+    }
+</style>";
 };
 
 # src: 
