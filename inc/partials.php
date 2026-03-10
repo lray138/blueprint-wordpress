@@ -38,7 +38,7 @@ function handle_partial_page_id(Kvm $partial_page_id): Str {
         // 
         $lst = Lst::of(array_values($meta));
         $attributes = handleAttributesField($lst)->get();
-    }
+    } 
  
     $partial_element = isset($attributes["element"]) 
         ? $attributes["element"]
@@ -194,7 +194,11 @@ function handle_columns(Kvm $row): Str {
 
 function handle_column(Kvm $column): Str {
 
-    if(!is_null($column->prop('partials'))) {
+    // if(!is_null($column->prop('partials'))) {
+    //     return Str::of("<div class=\"col {$column->prop('class')}\">" . concatPartials($column->prop('partials')) . "</div>");
+    // }
+    
+    if($column->mprop('partials') instanceof Just) {
         return Str::of("<div class=\"col {$column->prop('class')}\">" . concatPartials($column->prop('partials')) . "</div>");
     }
 
@@ -224,7 +228,7 @@ function handle_span(Kvm $span): Str {
         ->getOrElse("");
 
     $partials = $span->prop('items');
-
+    
     if($partials instanceof Nil || is_null($partials)) {
         if($span->prop('text')->get()) {
             $content = $span->prop('text');
@@ -291,14 +295,7 @@ function handle_partial_callable(Kvm $partial): Str {
 function tryPartial($partial, $args = []): Maybe {
     $out = getPartialCallable(Str::of($partial))
         ->map(fn($callable) => Str::of($callable($args)));
-
     return $out;
-}
-
-function tryPartial2($partial) {
-    return function($args) use ($partial) {
-        return tryPartial($partial, $args);
-    };
 }
 
 function handle_query_render(Kvm $partial): Str {
@@ -335,11 +332,6 @@ function handle_query_render(Kvm $partial): Str {
         )
         ->getOrElse(Str::of(""));
 
-    if($out instanceof Lst) {
-        return Str::of(" no pipeline funcs");
-    }
-
     // needed to wrap after G2 prop/mprop/raw update
-
     return Str::of($out);
 }

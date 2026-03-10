@@ -8,11 +8,15 @@ use lray138\G2\{Kvm, Str, Lst, Num};
 
 $page_title = get_the_title();
 $content = "";
+<<<<<<< HEAD
 
 $content = renderPageContent(get_the_ID(), [
     "site_name" => "asdf",
     "site_url" => get_site_url() . "/"
 ]);
+=======
+$content = renderPageContent(get_the_ID());
+>>>>>>> d6fdcfa (adding editable sections)
 
 include(get_template_directory() . '/index.php');
 

@@ -38,7 +38,14 @@ return function($data = []) {
     $footer_class_extras = $data['footer_class_extras'] ?? '';
     
     # end data processing
-	return "<footer class=\"mt-auto mt-1 {$footer_class_extras}\"><div class=\"container\"><div class=\"row\"><div class=\"d-flex flex-column flex-sm-row justify-content-between py-4 my-4 border-top pb-0 mb-0\">{$section_5}</div></div></div></footer>";
+	return "<footer class=\"mt-auto mt-1 px-2 {$footer_class_add}\"><div class=\"{$container_class}\"><div class=\"row\"><div class=\"d-flex flex-column flex-sm-row justify-content-between pt-4 pb-2 border-top\">{$section_5}</div><style>
+                me a { text-decoration: none; }
+                me a:hover { text-decoration: underline; }
+                me a:fire {
+                    display: inline-block;
+                }
+                me a.fire:hover { text-decoration: none; display:inline-block;}
+            </style></div></div></footer>";
 };
 
 # src: 

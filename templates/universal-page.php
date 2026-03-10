@@ -88,4 +88,3 @@ $footer = handle_partial_page_id(Kvm::of(["page_id" => 1422]));
 $content .= $footer;
 
 include(get_template_directory() . '/index.php');
-

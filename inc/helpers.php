@@ -1,10 +1,10 @@
 <?php
 
-use lray138\G2\{Kvm, Str, Lst, Num, Maybe, Boo};
-use function lray138\g2\dump;
+use lray138\G2\{Kvm, Str, Lst, Num, Maybe, Nil, Result\Ok, Result\Err};
+use function lray138\g2\{wrap, dump};
 
 function getOuterWrappers(Lst $attrs): Lst {
-    
+
     return $attrs
         ->filter(fn($x) => $x["_type"] == "wrap" && $x["wrap_type"] == "outer")
         //->filter(fn($x) => $x["wrap_type"] == "outer")
@@ -64,17 +64,18 @@ function handlePageSection( Kvm $section ): Str {
         $inner_wrap_end = '';
     }
 
-    $inner_wrap_callable = $section->mprop($attrs_id)
+    $inner_wrap_callable = $section
+        ->mprop($attrs_id)
         ->bind(fn($x) => 
             $x->filter(fn($x) => $x["_type"] == "wrap" && $x["wrap_type"] == "blog_wrap_wide")
               ->map(fn($x) => [
                 "callable" => "blogWrapWide"
               ])
               ->mhead()
-              ->bind(fn($x) => Kvm::of($x)->mprop("callable"))
+              ->bind(fn(Lst $x) => Kvm::of($x)->mprop("callable"))
         )
         ->getOrElse($section->mprop($attrs_id)
-        ->bind(fn($x) => 
+        ->bind(fn(Lst $x) => 
             $x->filter(fn($x) => $x["_type"] == "wrap" && $x["wrap_type"] == "blog_wrap")
               ->map(fn($x) => [
                 "callable" => "blogWrap"
@@ -87,7 +88,6 @@ function handlePageSection( Kvm $section ): Str {
     $data = $section->mprop('data')
         ->map(fn($x) => $x->get())
         ->getOrElse([]);
-
 
     // brittle code to auto wrap blog
     if(isset($data["page_template"]) && $data["page_template"] == "templates/blog-page.php" && empty($inner_wrap_callable)) { 
@@ -102,36 +102,15 @@ function handlePageSection( Kvm $section ): Str {
         "content" => concatSectionPartials($section),
     ]));
 
-    // adding the return type since it's jsut 3 letters makes sense to me
-    // as we round out this architecture.
     $outer_wrappers = getOuterWrappers($section->prop($attrs_id));
     if($outer_wrappers->count()->get() > 0) {
-        $partials = $outer_wrappers
+        return $outer_wrappers
             ->reduce(function($c, $x) {
                 $attrs = isset($x["attrs"]) ? " " . $x["attrs"] : "";
                 $el = $x["element"];
                 return $c->wrap("<{$el}{$attrs}>", "</{$el}>");
             }, $partials);
     }
-
-    $t = $section->prop("section_attrs")
-        ->filter(fn($x) =>
-            ($x["wrap_type"] ?? null) === "outer"
-            && Kvm::of($x)->prop("wrap_attrs")
-                ->any(fn($a) => ($a["_type"] ?? null) === "partial_path")->isTrue()
-        )  
-        ->reduce(function($carry, $partial) {
-                return Kvm::of($partial)
-                    ->prop("wrap_attrs")
-                    ->filter(fn($x) => $x["_type"] == "partial_path")
-                    ->map(function($x) use ($carry) {
-                        $t = tryPartial("components/wrap/" . $x["partial_path"], [
-                            "content" => $carry
-                        ]);
-                        return $t->getOrElse("Wrap not found");
-                    })
-                    ->join("");
-            }, $partials);
 
     return $partials;
 }
@@ -173,22 +152,14 @@ function concatPartials(Lst $partials): Str {
     $partials->forEach( function( Kvm $p, Num $n ) use ( &$out ) {
         $out = $out->append(handleSectionPartial(
             $p->set( 'index', $n )
-                ->set( 'id', Str::of("p")->append($n))
+              ->set( 'id', Str::of("p")->append($n))
         ));
     });
 
     return $out;
 }
 
-// the "_type" i.e. partial name
-function getPartialCallable(Str $type, ?Str $src = null): Maybe {
-
-    $src = $src ?? Str::mempty();
-    $try = $src->prepend(dirname(__DIR__,3) . "/")->append("/partials/")->append($type)->get();
-
-    if(file_exists($try)) {
-        return Maybe::just((include $try));
-    }
+function getPartialPath(Str $type) {
 
     $callable_path  = $type->contains("/")
         ->fold(
@@ -196,7 +167,65 @@ function getPartialCallable(Str $type, ?Str $src = null): Maybe {
             fn() => $type->append(".php")
         );
 
-    // not sure about this
+    if($callable_path == "header/index.php") {
+        $callable_path = Str::of("header.php");
+    }
+
+    if($callable_path->contains("docs")->isTrue()) {
+        $callable = dirname(__DIR__) . "/partials/{$callable_path}";
+    
+        if(file_exists($callable)) {
+            return Str::of($callable);
+        }
+
+        return Str::of($callable);
+    }
+
+    $callable = dirname(__DIR__) . "/partials/components/{$callable_path}";
+    
+    if(file_exists($callable)) {
+        return Str::of($callable);
+    }
+
+    $callable = dirname(__DIR__) . "/partials/patterns/{$callable_path}";
+    
+    if(file_exists($callable)) {
+        return Str::of($callable);
+    }
+
+    $callable = dirname(__DIR__) . "/partials/elements/{$callable_path}";
+    
+    if(file_exists($callable)) {
+        return Str::of($callable);
+    }
+
+    $callable = dirname(__DIR__) . "/partials/{$callable_path}";
+    
+    if(file_exists($callable)) {
+        return Str::of($callable);
+    }
+
+    return Nil::unit();
+}
+
+function tryGetPartialPath($type) {
+
+    $path = getPartialPath(Str::of($type));
+    return $path instanceof Str 
+        ? Ok::of($path)
+        : Err::of("Partial not found")
+        ;
+}
+
+// the "_type" i.e. partial name
+function getPartialCallable(Str $type): Maybe {
+
+    $callable_path  = $type->contains("/")
+        ->fold(
+            fn() => $type->append("/index.php"), 
+            fn() => $type->append(".php")
+        );
+
     if($callable_path == "header/index.php") {
         $callable_path = Str::of("header.php");
     }
@@ -239,29 +268,61 @@ function getPartialCallable(Str $type, ?Str $src = null): Maybe {
 
 }
 
+function bp_get_page_by_bp_id($bp_id) {
+    global $wpdb;
+
+    $like = '%' . $wpdb->esc_like($bp_id) . '%';
+
+    $post_id = $wpdb->get_var(
+        $wpdb->prepare(
+            "
+            SELECT pm.post_id
+            FROM {$wpdb->postmeta} pm
+            INNER JOIN {$wpdb->posts} p
+                ON p.ID = pm.post_id
+            WHERE pm.meta_value LIKE %s
+              AND p.post_type NOT IN ('revision', 'attachment')
+              AND p.post_status NOT IN ('auto-draft', 'inherit')
+            LIMIT 1
+            ",
+            $like
+        )
+    );
+
+    return $post_id ? (int) $post_id : null;
+}
+
+
 function handleSectionPartial(Kvm $partial): Str {    
 
     if($partial->prop('_type') === 'file') {
         $partial = $partial->set('_type', Str::of('file'));
     }
-   
+
     $callable = $partial
         ->prop('_type')
         //->map("ucfirst")
         ->prepend("handle_");
 
-
-
     // this was original demo method and the ultimate override
     if(function_exists($callable->get())) {
-        return $callable->get()($partial);
+        $content = Str::of($callable->get()($partial));
+        
+        return $partial->mprop("bp_id")
+            ->map(function($bp_id) {
+                $x = bp_get_page_by_bp_id($bp_id);
+                $x = get_edit_post_link($x) . "&bp_edit=$bp_id";
+                return $x; 
+            })
+            ->map(fn($x) => Str::of("<div data-bp-edit-url=\"$x\">$content</div>"))
+            ->getOrElse($content);
     }
-
+    
     $controller = $partial->prop('_type')->wrap("handle_", "_data")->get();
     if(function_exists($controller)) {
         $partial = $controller($partial); // partial is already a Kvm
     }
-   
+    
     // this does become a little 'esoteric' when read in reverse
     return getPartialCallable($partial->prop('_type'))
         ->map(fn($callable) => Str::of($callable($partial->get())))
@@ -396,8 +457,8 @@ function getHeaderClassExtras($config_items): string {
     return "";
 }
 
-function renderPageContent($page_id, $globals = []) {
-    
+function renderPageContent($page_id) {
+
     // check head options
 
     // check header option
@@ -417,11 +478,10 @@ function renderPageContent($page_id, $globals = []) {
         return "";
     }
 
-    // NOT OBVIOUS WTF IS GOING ON 
-    // looks like we're ... sections could be akin to "slots" I do like that term in this context.
+    // get the configuration page and then concat sections
     return Lst::of(carbon_get_post_meta(get_config_page($slug)->ID, "template_sections"))
-        ->map(function($section) use ($config_items, $page_id, $slug, $globals) { 
-            
+        ->map(function($section) use ($config_items, $page_id, $slug) {
+
             switch($section["_type"]) {
                 case "partial_path":
                     $data = [];
@@ -438,18 +498,32 @@ function renderPageContent($page_id, $globals = []) {
                         }
                     }
 
-                    return getPartialCallable(Str::of($section["partial_path"]), Str::of($section["partial_src"]))
-                        ->fold(
-                            fn() => "",
-                            fn(callable $c) => $c(array_merge($globals, $data))
-                        );
+                    // looks like we are assuming 
+                    $c = getPartialCallable(Str::of($section["partial_path"]))
+                        ->get();
 
-                    //return $c($data);
+                    $out = Str::of($c(array_merge($data, [
+                        "data-bp-edit-url" => tryGetPartialPath($section["partial_path"])
+                            ->map(fn(Str $path) => $path->prepend('vscode://file'))
+                            ->getOrElse(Str::of(''))
+                    ])));
+
+                    // if($section["bp_edit"]) {
+                    //     $out = tryGetPartialPath($section["partial_path"])
+                    //         ->map(fn(Str $path) => $path->prepend('vscode://file'))
+                    //         ->map(fn(Str $path) => $out->wrap(
+                    //                 "<div class=\"t\" data-bp-edit-url='$path'>",
+                    //                 "</div>"
+                    //             )
+                    //         )
+                    //         ->getOrElse('');
+                    // }
+
+                    return $out;
                     break;
                 case "page_content":
 
                     $sections = carbon_get_post_meta( $page_id, $section["field_id"] );
-
 
                     $sections = Lst::of($sections);
                     return concatPageSections($sections, [
@@ -521,7 +595,7 @@ function getDocsSidebarNav($docs_homepage_id): Str {
 }
 
 function getDocsMainContent($current_page_id) {
-
+    
     $breadcrumbs = (include(get_template_directory() . '/partials/components/breadcrumbs/index.php'))([
         "current_page_id" => $current_page_id,
     ]);

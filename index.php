@@ -12,6 +12,6 @@
 <body <?php body_class('d-flex flex-column min-vh-100'); ?> data-post-id="<?= get_the_ID(); ?>">
     <?php echo $content; ?>
     <?php wp_footer(); ?>
-    <script src="<?php echo get_template_directory_uri(); ?>/js/main.js"></script>
+    <script src="<?php echo get_template_directory_uri(); ?>/js/theme.js"></script>
 </body>
 </html>

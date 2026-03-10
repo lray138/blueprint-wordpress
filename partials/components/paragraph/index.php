@@ -5,8 +5,9 @@
 return function($data = []) { 
 	# start data processing
     extract($data);
+    $content = $text;
     # end data processing
-	return "<p {$attributes}>{$text}</p>";
+	return "<p {$attributes}>{$content}</p>";
 };
 
 # src: 

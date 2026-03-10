@@ -422,3 +422,180 @@ add_filter('get_avatar', function ($avatar, $id_or_email, $size) {
 }
 
 }, 10, 3);
+
+
+// set_exception_handler(function ($e) {
+//     echo "<h1>Application Error</h1>";
+//     echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
+// });
+
+    function vscodeLink($file, $line = null)
+    {
+        if (!$file) return '[internal]';
+
+        $uri = "vscode://file{$file}" . ($line ? ":{$line}" : "");
+
+        return '<a href="' . htmlspecialchars($uri) . '">' .
+            htmlspecialchars($file) . ($line ? ":{$line}" : "") .
+            '</a>';
+    }
+
+set_error_handler(function ($severity, $message, $file, $line) {
+
+    // Respect @ operator
+    if (!(error_reporting() & $severity)) {
+        return false;
+    }
+
+    echo '<div style="padding:20px;font-family:monospace;">';
+
+    echo '<h2 style="margin-top:0;">Warning</h2>';
+
+    echo '<p>' . htmlspecialchars($message) . '</p>';
+
+    echo '<p><strong>File:</strong> ' .
+        vscodeLink($file, $line) .
+        '</p>';
+
+    echo '</div>';
+
+    return true;
+});
+
+set_exception_handler(function (Throwable $e) {
+    http_response_code(500);
+
+    $trace = $e->getTrace();
+
+    $filtered = array_filter($trace, function ($frame) {
+        return !isset($frame['file']) || strpos($frame['file'], '/vendor/') === false;
+    });
+
+
+    function formatTrace(array $trace)
+    {
+        $lines = [];
+
+        foreach ($trace as $i => $frame) {
+            $file = $frame['file'] ?? null;
+            $line = $frame['line'] ?? null;
+            $func = ($frame['class'] ?? '') . ($frame['type'] ?? '') . ($frame['function'] ?? '');
+
+            $lines[] = "#{$i} " . vscodeLink($file, $line) . " {$func}";
+        }
+
+        return implode("<br>", $lines);
+    }
+
+    echo '<div style="padding:20px;font-family:monospace;">';
+
+    echo '<h2 style="margin-top:0;">' . htmlspecialchars(get_class($e)) . '</h2>';
+    echo '<p>' . htmlspecialchars($e->getMessage()) . '</p>';
+
+    echo '<p><strong>File:</strong> ' .
+        vscodeLink($e->getFile(), $e->getLine()) .
+        '</p>';
+
+    echo '<h3>Application Trace (no vendor)</h3>';
+    echo '<div>' . formatTrace($filtered) . '</div>';
+
+    echo '<h3>Full Trace</h3>';
+    echo '<div>' . formatTrace($trace) . '</div>';
+
+    echo '</div>';
+});
+
+
+add_action('admin_bar_menu', function (WP_Admin_Bar $wp_admin_bar) {
+    if (is_admin()) {
+        return;
+    }
+
+    if (!is_user_logged_in() || !current_user_can('edit_posts')) {
+        return;
+    }
+
+    $wp_admin_bar->add_node([
+        'id'    => 'bp-edit-toggle',
+        'title' => 'Blueprint Edit: Off',
+        'href'  => '#',
+        'meta'  => [
+            'class' => 'bp-edit-toggle',
+            'title' => 'Toggle Blueprint edit mode',
+        ],
+    ]);
+}, 100);
+
+add_action('wp_enqueue_scripts', function () {
+    if (is_admin()) {
+        return;
+    }
+
+    if (!is_user_logged_in() || !current_user_can('edit_posts')) {
+        return;
+    }
+
+    wp_register_script(
+        'bp-front-edit-toggle',
+        false,
+        [],
+        null,
+        true
+    );
+
+    wp_enqueue_script('bp-front-edit-toggle');
+
+    wp_add_inline_script('bp-front-edit-toggle', <<<'JS'
+document.addEventListener('DOMContentLoaded', function () {
+    const storageKey = 'bpEditEnabled';
+    const body = document.body;
+    const toggle = document.querySelector('#wp-admin-bar-bp-edit-toggle a');
+
+    if (!body || !toggle) return;
+
+    function setState(enabled) {
+        body.classList.toggle('bp-edit', enabled);
+        toggle.classList.toggle('is-active', enabled);
+        toggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        toggle.textContent = enabled
+            ? 'Blueprint Edit: On'
+            : 'Blueprint Edit: Off';
+
+        localStorage.setItem(storageKey, enabled ? '1' : '0');
+    }
+
+    const enabled = localStorage.getItem(storageKey) === '1';
+    setState(enabled);
+
+    toggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        setState(!body.classList.contains('bp-edit'));
+    });
+});
+JS);
+
+    wp_register_style(
+        'bp-front-edit-toggle',
+        false,
+        [],
+        null
+    );
+
+    wp_enqueue_style('bp-front-edit-toggle');
+
+    wp_add_inline_style('bp-front-edit-toggle', <<<'CSS'
+#wp-admin-bar-bp-edit-toggle a.is-active {
+    font-weight: 700;
+}
+
+[data-bp-edit-url] .bp-edit-button,
+[data-bp-edit] .bp-edit-button {
+    display: none;
+}
+
+body.bp-edit [data-bp-edit-url] .bp-edit-button,
+body.bp-edit [data-bp-edit] .bp-edit-button {
+    display: inline-flex;
+}
+CSS);
+});

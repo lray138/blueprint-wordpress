@@ -29,5 +29,5 @@
 
  $content = "<div class=\"container\">" . (include(get_template_directory() . '/partials/header.php'))() . "</div>";
  $content .= "<div class=\"container\">" .  $page_content  . "</div>";
- $content .= "<div class=\"container mt-auto\">" . (include(get_template_directory() . '/partials/footer.php'))() . "</div>";
+ //$content .= "<div class=\"container mt-auto\">" . (include(get_template_directory() . '/partials/footer.php'))() . "</div>";
  include(get_template_directory() . '/index.php');
