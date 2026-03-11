@@ -10,4 +10,4 @@ return function($data = []) {
 {$list_items}";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/footer/section.ejs

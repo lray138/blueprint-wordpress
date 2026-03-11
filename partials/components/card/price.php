@@ -15,4 +15,4 @@ return function($data = []) {
 	return "<div class=\"card mb-4 rounded-2 shadow-sm\"><div class=\"card-header py-3 pb-0 bg-transparent border-bottom-0\">{$badge}</div><div class=\"card-body\"><h1 class=\"card-title pricing-card-title\">${$price}<small class=\"text-body-secondary fw-light\">/{$price_suffix}</small></h1>{$features}<button type=\"button\" class=\"w-100 btn btn-lg mt-3 btn-{$button_type}\">{$button_text}</button></div></div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/card/price.ejs

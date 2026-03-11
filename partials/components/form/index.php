@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<form {$attributes}>{$content}</form>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/form/index.ejs

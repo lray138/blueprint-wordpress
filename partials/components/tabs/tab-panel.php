@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<div class=\"tab-pane fade position-relative {$class_names}\" id=\"{$id}\" role=\"tabpanel\" aria-labelledby=\"{$aria_labelledby}\">{$content}</div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/tabs/tab-panel.ejs

@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<div class=\"row g-3\"><div class=\"col-12 col-md-4\">{$col_1_content}</div><div class=\"col-12 col-md-4\">{$col_2_content}</div><div class=\"col-12 col-md-4\">{$col_3_content}</div></div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/wraps/row-three-cols.ejs

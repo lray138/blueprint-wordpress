@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<li class=\"breadcrumb-item active\" aria-current=\"page\">Data</li>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/breadcrumbs/list-item.ejs

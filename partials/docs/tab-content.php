@@ -46,4 +46,4 @@ Accordion Item #3
 &lt;/div&gt;</code></pre></div></div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/docs/tab-content.ejs

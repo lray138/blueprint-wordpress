@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<div class=\"feature\">{$content}</div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/icon-feature/index.ejs

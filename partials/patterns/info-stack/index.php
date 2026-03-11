@@ -11,4 +11,4 @@ return function($data = []) {
 	return "<div data-pattern=\"info-stack\">{$content}</div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/patterns/info-stack/index.ejs

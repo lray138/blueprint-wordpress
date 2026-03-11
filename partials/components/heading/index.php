@@ -11,4 +11,4 @@ return function($data = []) {
 	return "<h{$level} {$attributes}>{$text}</h{$level}>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/heading/index.ejs

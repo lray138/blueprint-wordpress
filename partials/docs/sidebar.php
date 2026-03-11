@@ -75,4 +75,4 @@ return function($data = []) {
             </script></div></div></div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/docs/sidebar.ejs

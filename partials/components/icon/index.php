@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<i {$attributes}></i>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/icon/index.ejs

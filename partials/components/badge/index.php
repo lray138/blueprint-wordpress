@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<span {$attributes}>{$text}</span>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/badge/index.ejs

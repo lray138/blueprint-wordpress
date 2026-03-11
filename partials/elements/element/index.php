@@ -9,4 +9,4 @@ return function($data = []) {
 	return "{$content}{$element}>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/elements/element/index.ejs

@@ -48,4 +48,4 @@ return function($data = []) {
             </style></div></div></footer>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/footer.ejs

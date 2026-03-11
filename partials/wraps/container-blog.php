@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<div class=\"container {$class_names}\"><div class=\"row justify-content-center\"><div class=\"col-12 col-md-10 col-lg-8 col-xl-7\">{$content}</div></div></div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/wraps/container-blog.ejs

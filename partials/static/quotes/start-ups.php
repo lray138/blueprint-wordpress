@@ -9,4 +9,4 @@ return function($data = []) {
 	return "{$quote}";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/static/quotes/start-ups.ejs

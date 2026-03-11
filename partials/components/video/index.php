@@ -9,4 +9,4 @@ return function($data = []) {
 	return "{$embed}";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/video/index.ejs

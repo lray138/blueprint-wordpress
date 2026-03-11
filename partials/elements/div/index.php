@@ -19,4 +19,4 @@ return function($data = []) {
 	return "<div {$attributes}>{$content}</div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/elements/div/index.ejs

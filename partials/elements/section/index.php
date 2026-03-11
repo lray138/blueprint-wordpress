@@ -27,4 +27,4 @@ return function($data = []) {
     {$inner_wrap_end}</section>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/elements/section/index.ejs

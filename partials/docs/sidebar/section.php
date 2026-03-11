@@ -1,10 +1,14 @@
 <?php
 # start use
+use function lray138\G2\dump;
 # end use
 
 return function($data = []) { 
 	# start data processing
     extract($data);
+    $section_heading = $anchor;
+    $collapse_id = "";
+    $collapse_class = "";
     # end data processing
 	return "{$section_heading}<div class=\"{$collapse_class}\" id=\"{$collapse_id}\">{$list}</div><style>
     me .section-heading {
@@ -51,4 +55,4 @@ return function($data = []) {
 </style>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/docs/sidebar/section.ejs

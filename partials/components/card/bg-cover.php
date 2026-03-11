@@ -46,4 +46,4 @@ return function($data = []) {
 </style>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/card/bg-cover.ejs

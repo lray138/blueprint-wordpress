@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<pre class=\"{$pre_class}\"><code class=\"{$code_class}\">{$body}</code></pre>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/code-block/index.ejs

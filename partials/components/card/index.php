@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<div class=\"card {$card_attrs}\">{$content}</div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/card/index.ejs

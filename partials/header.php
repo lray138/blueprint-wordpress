@@ -6,8 +6,6 @@ use function lray138\g2\dump;
 
 return function($data = []) { 
 	# start data processing
-
-
     extract($data);
     $nav_links = "";
     $partials = Lst::of(carbon_get_post_meta('226', 'partials'));
@@ -80,4 +78,4 @@ return function($data = []) {
                     </li> --></ul><div class=\"col-md-3 text-end mx-auto\">{$flex_end_content}</div></div></div></div></nav>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/header.ejs

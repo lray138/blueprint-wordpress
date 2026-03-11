@@ -10,4 +10,4 @@ return function($data = []) {
                 {$col_2_content2}</div></div></div></section>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/wrap/section-two-col.ejs

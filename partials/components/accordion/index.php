@@ -24,4 +24,4 @@ return function($data = []) {
 	return "<div class=\"{$classNames}\" id=\"{$id}\" {$attributes}>{$items}</div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/accordion/index.ejs

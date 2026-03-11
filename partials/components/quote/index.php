@@ -11,4 +11,4 @@ return function($data = []) {
         </div>  --><span class=\"quote-source h6 text-uppercase mb-2\">{$source}</span></div></blockquote>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/quote/index.ejs

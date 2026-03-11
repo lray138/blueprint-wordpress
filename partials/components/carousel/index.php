@@ -54,4 +54,4 @@ carousel.addEventListener(\"slid.bs.carousel\", () => {
 </script>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/carousel/index.ejs

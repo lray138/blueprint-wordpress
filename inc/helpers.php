@@ -64,26 +64,27 @@ function handlePageSection( Kvm $section ): Str {
         $inner_wrap_end = '';
     }
 
-    $inner_wrap_callable = $section
-        ->mprop($attrs_id)
-        ->bind(fn($x) => 
-            $x->filter(fn($x) => $x["_type"] == "wrap" && $x["wrap_type"] == "blog_wrap_wide")
-              ->map(fn($x) => [
-                "callable" => "blogWrapWide"
-              ])
-              ->mhead()
-              ->bind(fn(Lst $x) => Kvm::of($x)->mprop("callable"))
-        )
-        ->getOrElse($section->mprop($attrs_id)
-        ->bind(fn(Lst $x) => 
-            $x->filter(fn($x) => $x["_type"] == "wrap" && $x["wrap_type"] == "blog_wrap")
-              ->map(fn($x) => [
-                "callable" => "blogWrap"
-              ])
-              ->mhead()
-              ->bind(fn($x) => Kvm::of($x)->mprop("callable"))
-        )
-        ->getOrElse(''));
+    $inner_wrap_callable = "";
+    // $inner_wrap_callable = $section
+    //     ->mprop($attrs_id)
+    //     ->bind(fn($x) => 
+    //         $x->filter(fn($x) => $x["_type"] == "wrap" && $x["wrap_type"] == "blog_wrap_wide")
+    //           ->map(fn($x) => [
+    //             "callable" => "blogWrapWide"
+    //           ])
+    //           ->mhead()
+    //           ->bind(fn(Lst $x) => Kvm::of($x)->mprop("callable"))
+    //     )
+    //     ->getOrElse($section->mprop($attrs_id)
+    //     ->bind(fn(Lst $x) => 
+    //         $x->filter(fn($x) => $x["_type"] == "wrap" && $x["wrap_type"] == "blog_wrap")
+    //           ->map(fn($x) => [
+    //             "callable" => "blogWrap"
+    //           ])
+    //           ->mhead()
+    //           ->bind(fn($x) => Kvm::of($x)->mprop("callable"))
+    //     )
+    //     ->getOrElse(''));
 
     $data = $section->mprop('data')
         ->map(fn($x) => $x->get())
@@ -309,10 +310,14 @@ function handleSectionPartial(Kvm $partial): Str {
         $content = Str::of($callable->get()($partial));
         
         return $partial->mprop("bp_id")
-            ->map(function($bp_id) {
+            ->bind(function(Str $bp_id) {
+                if(empty($bp_id->get())) {
+                    return Maybe::nothing();
+                }
+
                 $x = bp_get_page_by_bp_id($bp_id);
                 $x = get_edit_post_link($x) . "&bp_edit=$bp_id";
-                return $x; 
+                return Maybe::just($x); 
             })
             ->map(fn($x) => Str::of("<div data-bp-edit-url=\"$x\">$content</div>"))
             ->getOrElse($content);
@@ -431,6 +436,7 @@ function getDefaultPageContent($t): Str {
     ])->getOrElse($content);
     return Str::of($content);
 }
+
 function pinTopHeader($config_items): bool {
     foreach($config_items as $config_item) {
         if($config_item["_type"] === "header") {
@@ -487,7 +493,7 @@ function renderPageContent($page_id) {
                     $data = [];
 
                     // returns a Maybe
-                    if($section["partial_path"] == "header") {
+                    if(in_array($section["partial_path"], ["header", "header/original"])) {
                         if(pinTopHeader($config_items)) {
                             $data["section_class_extras"] = "pin-top";
                         }
@@ -503,21 +509,21 @@ function renderPageContent($page_id) {
                         ->get();
 
                     $out = Str::of($c(array_merge($data, [
-                        "data-bp-edit-url" => tryGetPartialPath($section["partial_path"])
-                            ->map(fn(Str $path) => $path->prepend('vscode://file'))
-                            ->getOrElse(Str::of(''))
+                        // "data-bp-edit-url" => tryGetPartialPath($section["partial_path"])
+                        //     ->map(fn(Str $path) => $path->prepend('vscode://file'))
+                        //     ->getOrElse(Str::of(''))
                     ])));
 
-                    // if($section["bp_edit"]) {
-                    //     $out = tryGetPartialPath($section["partial_path"])
-                    //         ->map(fn(Str $path) => $path->prepend('vscode://file'))
-                    //         ->map(fn(Str $path) => $out->wrap(
-                    //                 "<div class=\"t\" data-bp-edit-url='$path'>",
-                    //                 "</div>"
-                    //             )
-                    //         )
-                    //         ->getOrElse('');
-                    // }
+                    if($section["bp_edit"] && !empty($section["bp_edit"])) {
+                        $out = tryGetPartialPath($section["partial_path"])
+                            ->map(fn(Str $path) => $path->prepend('vscode://file'))
+                            ->map(fn(Str $path) => $out->wrap(
+                                    "<div class=\"t\" data-bp-edit-url='$path'>",
+                                    "</div>"
+                                )
+                            )
+                            ->getOrElse('');
+                    }
 
                     return $out;
                     break;
@@ -532,6 +538,10 @@ function renderPageContent($page_id) {
                
                     break;
                 case "partial_page":
+                    //dump($section);
+
+                    
+
                     $id = $section["partial_pages"][0]["id"];
                     // this is where it should be LISO and wrap inside if needed... 
                     return handle_partial_page_id(Kvm::of(["page_id" => $id]));
@@ -613,7 +623,6 @@ function getDocsMainContent($current_page_id) {
 
     return $content;
 }
-
 
 /**
  * Add "link-secondary" to nav anchor classes when the anchor points to $currentPageId.

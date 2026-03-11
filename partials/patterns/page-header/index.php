@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<div class=\"page-header {$class_names}\"><h2 class=\"display-2\">{$heading}</h2><p class=\"lead\">{$text}</p></div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/patterns/page-header/index.ejs

@@ -26,4 +26,4 @@ return function($data = []) {
 }) %></div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/accordion/examples/standard.ejs

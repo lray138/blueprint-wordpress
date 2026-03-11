@@ -9,4 +9,4 @@ return function($data = []) {
 	return "{$content}";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/patterns/info-stack/examples/standard.ejs

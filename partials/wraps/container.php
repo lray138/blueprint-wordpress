@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<div class=\"container\">{$content}</div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/wraps/container.ejs

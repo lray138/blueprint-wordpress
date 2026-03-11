@@ -9,4 +9,4 @@ return function($data = []) {
 	return "{$label_top}<input {$attributes}/>{$label_bottom}";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/elements/input/index.ejs

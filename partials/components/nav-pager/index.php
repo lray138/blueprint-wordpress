@@ -44,4 +44,4 @@ return function($data = []) {
 </style>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/nav-pager/index.ejs

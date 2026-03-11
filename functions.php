@@ -12,8 +12,19 @@ require_once get_template_directory() . '/inc/partials.php';
 require_once get_template_directory() . '/inc/admin/clone-carbon-page.php';
 
 function renderBlogBgCardList(Lst $pages) {
-    dump($pages);
-    die;
+
+    return $pages->map(function(WP_Post $x) {
+
+        $data = [
+            "bg_img" => get_the_post_thumbnail_url($x->ID, 'large'),
+            "title" => $x->post_title,
+            "href" => get_permalink($x->ID)
+        ];
+
+        return tryPartial("components/card/bg-cover", $data)->getOrElse('');
+        
+    })
+        ->join('');
 }
 
 /**
@@ -162,7 +173,6 @@ function getHomeImages(): Lst {
 }
 
 function renderMasonry(Lst $l) {
-
     return $l->map(function($x) {
         if(is_image($x)) {
             $src = wp_get_attachment_image_src($x->ID, 'full')[0];
@@ -172,6 +182,20 @@ function renderMasonry(Lst $l) {
     })
     ->join("");
 }
+
+add_action('admin_init', function () {
+
+    $post_id = $_GET['post'] ?? $_POST['post_ID'] ?? null;
+
+    if (!$post_id) return;
+
+    if (get_post_type($post_id) !== 'page') return;
+
+    if (get_page_template_slug($post_id) !== '') {
+        remove_post_type_support('page', 'editor');
+    }
+
+});
 
 add_action('admin_enqueue_scripts', function ($hook) {
 

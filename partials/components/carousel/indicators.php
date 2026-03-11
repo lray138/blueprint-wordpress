@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<div class=\"carousel-indicators\">{$buttons}</div>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/components/carousel/indicators.ejs

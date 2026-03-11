@@ -11,4 +11,4 @@ return function($data = []) {
 {$wrap_end}";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/wraps/index.ejs

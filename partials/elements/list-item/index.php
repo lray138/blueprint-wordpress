@@ -9,4 +9,4 @@ return function($data = []) {
 	return "<li {$attributes}>{$content}</li>";
 };
 
-# src: 
+# src: webpack/src/blueprint/partials/elements/list-item/index.ejs
