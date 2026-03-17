@@ -8,11 +8,22 @@ return function($data = []) {
 	# start data processing
     extract($data);
     $nav_links = "";
+
+    // example of hardcoded page id.
     $partials = Lst::of(carbon_get_post_meta('226', 'partials'));
 
+    // great programmers are not lazy
+    // $items = $partials->ehead()->get()["items"];
 
-    $items = $partials->ehead()->get()["items"];
+    // 
+    $items = $partials->mhead()
+        ->map(function($x) {
+           return $x["items"]; 
+        })
+        ->getOrElse([]);
+
     $new_items = [];
+
     foreach($items as $item) {
         // this is why the $path is actually a cool method
 

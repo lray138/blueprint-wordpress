@@ -1,7 +1,7 @@
 <?php
 
 use lray138\G2\{Kvm, Str, Lst, Num, Maybe, Nil, Result\Ok, Result\Err};
-use function lray138\g2\{wrap, dump};
+use function lray138\g2\{wrap, dump, apply};
 
 function getOuterWrappers(Lst $attrs): Lst {
 
@@ -218,55 +218,35 @@ function tryGetPartialPath($type) {
         ;
 }
 
+function ensurePhp(Str $t): Str
+{
+    return $t->endsWith(".php")
+        ->match(
+            fn() => $t->concat(Str::of(".php")),
+            fn() => $t
+        );
+}
+
+const ensurePhp = __NAMESPACE__ . '\\ensurePhp';
+
 // the "_type" i.e. partial name
 function getPartialCallable(Str $type): Maybe {
 
-    $callable_path  = $type->contains("/")
-        ->fold(
-            fn() => $type->append("/index.php"), 
-            fn() => $type->append(".php")
-        );
-
-    if($callable_path == "header/index.php") {
-        $callable_path = Str::of("header.php");
-    }
-
-    if($callable_path->contains("docs")->isTrue()) {
-        $callable = dirname(__DIR__) . "/partials/{$callable_path}";
+    // One thing I would avoid is naming it fold on Boo, 
+    // because even though you can justify it academically, match is much more immediately readable in your ecosystem.
     
-        if(file_exists($callable)) {
-            return Maybe::just((include $callable));
-        }
-
-        return Maybe::nothing();
-    }
-
-    $callable = dirname(__DIR__) . "/partials/components/{$callable_path}";
+    // clear vs. clever... make the path explicit from user end
     
-    if(file_exists($callable)) {
-        return Maybe::just((include $callable));
-    }
+    $out = $type
+        ->pipe(ensurePhp)
+        ->pipe(fn(Str $s) => $s->prepend(dirname(__DIR__) . "/"))
+        ->pipe(function(Str $path) {
+            return file_exists($path->get())
+                ? Maybe::just(include($path))
+                : Maybe::nothing();
+        });
 
-    $callable = dirname(__DIR__) . "/partials/patterns/{$callable_path}";
-    
-    if(file_exists($callable)) {
-        return Maybe::just((include $callable));
-    }
-
-    $callable = dirname(__DIR__) . "/partials/elements/{$callable_path}";
-    
-    if(file_exists($callable)) {
-        return Maybe::just((include $callable));
-    }
-
-    $callable = dirname(__DIR__) . "/partials/{$callable_path}";
-    
-    if(file_exists($callable)) {
-        return Maybe::just((include $callable));
-    }
-
-    return Maybe::nothing();
-
+    return $out;
 }
 
 function bp_get_page_by_bp_id($bp_id) {
@@ -299,6 +279,8 @@ function handleSectionPartial(Kvm $partial): Str {
     if($partial->prop('_type') === 'file') {
         $partial = $partial->set('_type', Str::of('file'));
     }
+
+    
 
     $callable = $partial
         ->prop('_type')
@@ -463,7 +445,7 @@ function getHeaderClassExtras($config_items): string {
     return "";
 }
 
-function renderPageContent($page_id) {
+function renderPageContent($page_id, $data = []) {
 
     // check head options
 
@@ -471,7 +453,6 @@ function renderPageContent($page_id) {
     $config_items = carbon_get_post_meta($page_id, 'page_config_items');
 
     // check footer options
-
     $slug = get_page_template_slug($page_id);
 
     if(empty($slug)) {
@@ -505,27 +486,28 @@ function renderPageContent($page_id) {
                     }
 
                     // looks like we are assuming 
-                    $c = getPartialCallable(Str::of($section["partial_path"]))
-                        ->get();
+                    $out = getPartialCallable(Str::of($section["partial_path"]))
+                        ->map(apply($data));
 
-                    $out = Str::of($c(array_merge($data, [
+                    // $out = Str::of($c(array_merge($data, [
                         // "data-bp-edit-url" => tryGetPartialPath($section["partial_path"])
                         //     ->map(fn(Str $path) => $path->prepend('vscode://file'))
                         //     ->getOrElse(Str::of(''))
-                    ])));
+                    // ])));
 
-                    if($section["bp_edit"] && !empty($section["bp_edit"])) {
-                        $out = tryGetPartialPath($section["partial_path"])
-                            ->map(fn(Str $path) => $path->prepend('vscode://file'))
-                            ->map(fn(Str $path) => $out->wrap(
-                                    "<div class=\"t\" data-bp-edit-url='$path'>",
-                                    "</div>"
-                                )
-                            )
-                            ->getOrElse('');
-                    }
+                    // if($section["bp_edit"] && !empty($section["bp_edit"])) {
+                    //     $out = tryGetPartialPath($section["partial_path"])
+                    //         ->map(fn(Str $path) => $path->prepend('vscode://file'))
+                    //         ->map(fn(Str $path) => $out->wrap(
+                    //                 "<div class=\"t\" data-bp-edit-url='$path'>",
+                    //                 "</div>"
+                    //             )
+                    //         )
+                    //         ->getOrElse('');
+                    // }
 
-                    return $out;
+                    return Str::of($out);
+
                     break;
                 case "page_content":
 
@@ -539,9 +521,6 @@ function renderPageContent($page_id) {
                     break;
                 case "partial_page":
                     //dump($section);
-
-                    
-
                     $id = $section["partial_pages"][0]["id"];
                     // this is where it should be LISO and wrap inside if needed... 
                     return handle_partial_page_id(Kvm::of(["page_id" => $id]));
