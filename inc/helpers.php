@@ -1,6 +1,6 @@
 <?php
 
-use lray138\G2\{Kvm, Str, Lst, Num, Maybe, Nil, Result\Ok, Result\Err};
+use lray138\G2\{Kvm, Str, Lst, Num, Maybe, Nil, Result\Ok, Result\Err, Result};
 use function lray138\g2\{wrap, dump, apply};
 
 function getOuterWrappers(Lst $attrs): Lst {
@@ -41,7 +41,9 @@ function getInnerWrappers(Lst $attrs): Lst {
 // handle page section
 function handlePageSection( Kvm $section ): Str {
     // here $element is $section 
-    $element = getPartialCallable($section->prop('_type'))->get();
+
+    $element = getPartialCallable($section->prop('_type'))
+        ->getOrElse(include dirname(__DIR__) . '/partials/elements/section/index.php');
 
     $attrs_id = $section->mprop('_type')->get() . "_attrs";
 
@@ -230,23 +232,9 @@ function ensurePhp(Str $t): Str
 const ensurePhp = __NAMESPACE__ . '\\ensurePhp';
 
 // the "_type" i.e. partial name
-function getPartialCallable(Str $type): Maybe {
-
-    // One thing I would avoid is naming it fold on Boo, 
-    // because even though you can justify it academically, match is much more immediately readable in your ecosystem.
-    
-    // clear vs. clever... make the path explicit from user end
-    
-    $out = $type
-        ->pipe(ensurePhp)
-        ->pipe(fn(Str $s) => $s->prepend(dirname(__DIR__) . "/"))
-        ->pipe(function(Str $path) {
-            return file_exists($path->get())
-                ? Maybe::just(include($path))
-                : Maybe::nothing();
-        });
-
-    return $out;
+function getPartialCallable(Str $type): Result {
+    return tryGetPartialPath($type)
+        ->map(fn($x) => include($x));
 }
 
 function bp_get_page_by_bp_id($bp_id) {
@@ -280,8 +268,6 @@ function handleSectionPartial(Kvm $partial): Str {
         $partial = $partial->set('_type', Str::of('file'));
     }
 
-    
-
     $callable = $partial
         ->prop('_type')
         //->map("ucfirst")
@@ -306,6 +292,7 @@ function handleSectionPartial(Kvm $partial): Str {
     }
     
     $controller = $partial->prop('_type')->wrap("handle_", "_data")->get();
+    
     if(function_exists($controller)) {
         $partial = $controller($partial); // partial is already a Kvm
     }

@@ -1,7 +1,7 @@
 <?php
 # start use
 use lray138\g2\Lst;
-use function lray138\g2\dump;
+use function lray138\g2\unwrap;
 # end use
 
 return function($data = []) { 
@@ -18,7 +18,7 @@ return function($data = []) {
     // 
     $items = $partials->mhead()
         ->map(function($x) {
-           return $x["items"]; 
+           return unwrap($x)["items"]; 
         })
         ->getOrElse([]);
 

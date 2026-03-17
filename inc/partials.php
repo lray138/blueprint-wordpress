@@ -1,6 +1,6 @@
 <?php
 
-use lray138\G2\{Kvm, Str, Lst,Nil, Num, Maybe};
+use lray138\G2\{Kvm, Str, Lst,Nil, Num, Result};
 use function lray138\g2\dump;
 
 function handle_partial_page(Kvm $partial_page): Str {
@@ -292,7 +292,7 @@ function handle_partial_callable(Kvm $partial): Str {
         ->getOrElse(Str::of('partial not found'));
 }
 
-function tryPartial($partial, $args = []): Maybe {
+function tryPartial($partial, $args = []): Result {
     $out = getPartialCallable(Str::of($partial))
         ->map(fn($callable) => Str::of($callable($args)));
     return $out;
