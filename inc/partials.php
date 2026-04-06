@@ -293,7 +293,7 @@ function handle_partial_callable(Kvm $partial): Str {
 }
 
 function tryPartial($partial, $args = []): Result {
-    $out = getPartialCallable(Str::of($partial))
+    $out = tryPartialCallable(Str::of($partial))
         ->map(fn($callable) => Str::of($callable($args)));
     return $out;
 }

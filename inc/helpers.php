@@ -1,10 +1,9 @@
 <?php
 
-use lray138\G2\{Kvm, Str, Lst, Num, Maybe, Nil, Result\Ok, Result\Err, Result};
-use function lray138\g2\{wrap, dump, apply};
+use lray138\G2\{Kvm, Str, Lst, Num, Maybe, Either, Nil, Result\Ok, Result\Err, Result};
+use function lray138\g2\{wrap, dump, apply, curryN, flipN};
 
 function getOuterWrappers(Lst $attrs): Lst {
-
     return $attrs
         ->filter(fn($x) => $x["_type"] == "wrap" && $x["wrap_type"] == "outer")
         //->filter(fn($x) => $x["wrap_type"] == "outer")
@@ -42,16 +41,22 @@ function getInnerWrappers(Lst $attrs): Lst {
 function handlePageSection( Kvm $section ): Str {
     // here $element is $section 
 
-    $element = getPartialCallable($section->prop('_type'))
+    $element = tryPartialCallable($section->prop('_type'))
         ->getOrElse(include dirname(__DIR__) . '/partials/elements/section/index.php');
 
-    $attrs_id = $section->mprop('_type')->get() . "_attrs";
+    $tryAttrsId = fn() => $section->tryProp('_type')
+        ->map(fn(Str $t) => $t->append("_attrs"));
 
-    $attributes = $section->mprop($attrs_id)
-        ->map(fn($x) => renderAttributes($x))
-        ->getOrElse('');
+    $tryAttributes = fn() => $tryAttrsId()
+        ->bind(fn(Str $t) => $section->tryProp($t));
 
-    $inner_wrappers = getInnerWrappers($section->prop($attrs_id));
+    $attributes = $tryAttributes()
+        ->map(fn(Lst $x) => renderAttributes($x))
+        ->getOrElse(Str::of(''));
+
+    $inner_wrappers = $tryAttributes()
+        ->map(fn(Lst $x) => getInnerWrappers($x))
+        ->getOrElse(Lst::of([]));
 
     if($inner_wrappers->count()->get() > 0) {
         $inner_wrap_start = $inner_wrappers
@@ -88,6 +93,8 @@ function handlePageSection( Kvm $section ): Str {
     //     )
     //     ->getOrElse(''));
 
+    // this is where we need docs to point to and .. I'm not even sure what this
+    // does... 
     $data = $section->mprop('data')
         ->map(fn($x) => $x->get())
         ->getOrElse([]);
@@ -97,7 +104,8 @@ function handlePageSection( Kvm $section ): Str {
         $inner_wrap_callable = "blogWrap";
     }
 
-    $partials = Str::of($element([
+    // element is the partial callable we should try 'ap' here
+    $content = Str::of($element([
         "attributes" => $attributes,
         "inner_wrap_start" => $inner_wrap_start,
         "inner_wrap_end" => $inner_wrap_end,
@@ -105,17 +113,22 @@ function handlePageSection( Kvm $section ): Str {
         "content" => concatSectionPartials($section),
     ]));
 
-    $outer_wrappers = getOuterWrappers($section->prop($attrs_id));
+    //$outer_wrappers = getOuterWrappers($section->prop($attrs_id));
+    $outer_wrappers = $tryAttrsId()
+        ->bind(fn(Str $t) => $section->tryProp($t))
+        ->map(fn(Lst $x) => getOuterWrappers($x))
+        ->getOrElse(Lst::of([]));
+
     if($outer_wrappers->count()->get() > 0) {
         return $outer_wrappers
             ->reduce(function($c, $x) {
                 $attrs = isset($x["attrs"]) ? " " . $x["attrs"] : "";
                 $el = $x["element"];
                 return $c->wrap("<{$el}{$attrs}>", "</{$el}>");
-            }, $partials);
+            }, $content);
     }
 
-    return $partials;
+    return $content;
 }
 
 function handle_file(Kvm $partial): Str {
@@ -134,17 +147,19 @@ function handle_file(Kvm $partial): Str {
 }
 
 function concatSectionPartials( Kvm $section ): Str {
-
-    $out = Str::of( '' );
-
-    $section
-        ->prop($section->prop('complex_field')->get())
-        ->forEach( function( Kvm $p, Num $n ) use ( &$out, $section ) {
-            $out = $out->append(handleSectionPartial(
-                $p->set( 'index', $n )
-                    ->set( 'id', $section->prop('id')->append("_p$n"))
-            ));
-        });
+    // complex_field is the key of the partial to use
+    $out = $section->mprop('complex_field')
+        ->bind(fn(Str $key) => $section->mprop($key))
+        ->map(fn(Lst $partials) => 
+            $partials->reduce(function(array $acc, array $partial) use ($section) {
+                $partial = Kvm::of($partial);
+                return [$acc[0]->append(handleSectionPartial(
+                    $partial->set( 'index', $acc[1] )
+                            ->set( 'id', $section->prop('id')->append("_p$acc[1]"))
+                )), $acc[1] + 1];
+            }, [Str::of(''), 0])[0]
+        )
+        ->getOrElse(Str::of(''));
 
     return $out;
 }
@@ -211,9 +226,9 @@ function getPartialPath(Str $type) {
     return Nil::unit();
 }
 
-function tryGetPartialPath($type) {
-
+function tryPartialPath($type) {
     $path = getPartialPath(Str::of($type));
+    
     return $path instanceof Str 
         ? Ok::of($path)
         : Err::of("Partial not found")
@@ -232,8 +247,8 @@ function ensurePhp(Str $t): Str
 const ensurePhp = __NAMESPACE__ . '\\ensurePhp';
 
 // the "_type" i.e. partial name
-function getPartialCallable(Str $type): Result {
-    return tryGetPartialPath($type)
+function tryPartialCallable(Str $type): Result {
+    return tryPartialPath($type)
         ->map(fn($x) => include($x));
 }
 
@@ -262,15 +277,79 @@ function bp_get_page_by_bp_id($bp_id) {
 }
 
 
+// there are hardcode functions and then there are the partials 
+// coming from the webpack set up, so if the handle_ function exists, use it. 
+// otherwise check for a data mutator and call it then try to use a partial
 function handleSectionPartial(Kvm $partial): Str {    
 
+    // not sure why this is happening?
     if($partial->prop('_type') === 'file') {
         $partial = $partial->set('_type', Str::of('file'));
     }
 
+    // this is an example where prop is always going to exist, but 
+    // as comprehension grows and being comfortable working in the Monadic context 
+    // I think mprop would be the default... however... Maybe not. hah, nah maybe not was cursor autocomplete.
+    return $partial
+        ->tryProp('_type')
+        ->map(fn(Str $t) => $t->prepend("handle_"))
+        ->pipe(fn(Result $r): Either
+            => $r->map(function(Str $callable) use ($partial) {
+                // this was original demo method and the ultimate override
+                if(function_exists($callable->get())) {
+                    $content = Str::of($callable->get()($partial));
+                    
+                    $val = $partial->mprop("bp_id")
+                        ->bind(function(Str $bp_id) {
+                            if(empty($bp_id->get())) {
+                                return Maybe::nothing();
+                            }
+
+                            $x = bp_get_page_by_bp_id($bp_id);
+                            $x = get_edit_post_link($x) . "&bp_edit=$bp_id";
+                            return Maybe::just($x); 
+                        })
+                        ->map(fn($x) => Str::of("<div data-bp-edit-url=\"$x\">$content</div>"))
+                        ->getOrElse($content);
+
+                    return Either::left($val);
+                }
+
+                return Either::right('asdf');
+            })
+            ->getOrElse(Either::left(''))
+        )
+        ->map(function() use ($partial) {
+            $controller = $partial->prop('_type')->wrap("handle_", "_data")->get();
+    
+            if(function_exists($controller)) {
+                $partial = $controller($partial); // partial is already a Kvm
+            }
+            
+            // this does become a little 'esoteric' when read in reverse
+            return tryPartialCallable($partial->prop('_type'))
+                ->map(fn($callable) => Str::of($callable($partial->get())))
+                ->getOrElse(Str::of("Unknown partial type: {$partial->prop('_type')}"));
+        })
+        ->fold(
+            fn($x) => $x,
+            fn($x) => $x
+        );
+
+}
+
+function handleSectionPartial_old(Kvm $partial): Str {    
+
+    // not sure why this is happening?
+    if($partial->prop('_type') === 'file') {
+        $partial = $partial->set('_type', Str::of('file'));
+    }
+
+    // this is an example where prop is always going to exist, but 
+    // as comprehension grows and being comfortable working in the Monadic context 
+    // I think mprop would be the default... however... Maybe not. hah, nah maybe not was cursor autocomplete.
     $callable = $partial
         ->prop('_type')
-        //->map("ucfirst")
         ->prepend("handle_");
 
     // this was original demo method and the ultimate override
@@ -298,27 +377,28 @@ function handleSectionPartial(Kvm $partial): Str {
     }
     
     // this does become a little 'esoteric' when read in reverse
-    return getPartialCallable($partial->prop('_type'))
+    return tryPartialCallable($partial->prop('_type'))
         ->map(fn($callable) => Str::of($callable($partial->get())))
         ->getOrElse(Str::of("Unknown partial type: {$partial->prop('_type')}"));
 }
 
-function concatPageSections( Lst $sections, $data = [] ): Str {
+function concatPageSections(Lst $sections, $data = [] ): Str {
     $out = Str::of( '' );
 
     extract($data);
     $type = $type ?? 'partials';
 
-    $sections->forEach( function( Kvm $s, Num $n ) use ( &$out, $type, $data ) {
-        $out = $out->append( handlePageSection(
-            $s->set( 'index', $n )
-                ->set( 'id', Str::of("s")->append($n) ) 
+    $out = $sections->reduce(function(array $acc, array $x) use (&$out, $type, $data) {
+        $x = Kvm::of($x);
+        return [$acc[0]->append(handlePageSection(
+            $x->set( 'index', $acc[1] )
+                ->set( 'id', Str::of("s")->append($acc[1]) ) 
                 ->set( 'complex_field', $type )
                 ->set( 'data', $data )
-        ) );
-    } );
+        )), $acc[1] + 1];
+    }, [Str::of(''), 0]);
 
-    return $out;
+    return Str::of($out[0]);
 }
 
 function zip_type_value(array $item): ?array
@@ -397,6 +477,25 @@ function get_config_page(string $template): ?WP_Post
     return $q->have_posts() ? $q->posts[0] : null;
 }
 
+function tryConfigPage(string $template): Result
+{
+    $slug = basename($template, '.php');
+
+    $q = new WP_Query([
+        'post_type'      => 'page',
+        'posts_per_page' => 1,
+        'name'           => $slug,
+        'meta_query'     => [
+            [
+                'key'   => '_wp_page_template',
+                'value' => 'templates/template-config.php',
+            ],
+        ],
+    ]);
+
+    return $q->have_posts() ? Result::ok($q->posts[0]) : Result::err("Config Page not found");
+}
+
 function getDefaultPageContent($t): Str { 
     $content = get_the_content();
     $content = apply_filters('the_content', $content);
@@ -432,8 +531,8 @@ function getHeaderClassExtras($config_items): string {
     return "";
 }
 
-function renderPageContent($page_id, $data = []) {
 
+function renderPageContent($page_id, $data = []) {
     // check head options
 
     // check header option
@@ -446,14 +545,34 @@ function renderPageContent($page_id, $data = []) {
         $slug = "default-page";
     }
 
-    $config_page = get_config_page($slug);
+    // each page must have a configuration 
+    // we do not default so it will return a blank page otherwise
+    return tryConfigPage($slug)
+        // get template sections from config page
+        ->bind(function(WP_Post $p) {
+            $r = carbon_get_post_meta($p->ID, "template_sections");
+            return is_null($r) 
+                ? Result::err("Template sections not found") 
+                : Result::ok(Lst::of($r));            
+        })
+        ->map(fn(Lst $sections) => handleTemplateSections($sections, $config_items, $page_id, $slug))
+        ->getOrElse("");
+}
 
-    if(is_null($config_page)) {
-        return "";
-    }
+function tryCarbonPostMeta(...$args): Result
+{
+    $f = function($field_id, $page_id) {
+        $r = carbon_get_post_meta($page_id, $field_id);
+        return is_null($r) 
+            ? Result::err("Carbon post meta not found") 
+            : Result::ok(Lst::of($r));
+    };
 
-    // get the configuration page and then concat sections
-    return Lst::of(carbon_get_post_meta(get_config_page($slug)->ID, "template_sections"))
+    return call_user_func_array(curryN(2, $f), $args);
+}
+
+function handleTemplateSections(Lst $sections, $config_items, $page_id, $slug) {
+    return $sections
         ->map(function($section) use ($config_items, $page_id, $slug) {
 
             switch($section["_type"]) {
@@ -473,7 +592,7 @@ function renderPageContent($page_id, $data = []) {
                     }
 
                     // looks like we are assuming 
-                    $out = getPartialCallable(Str::of($section["partial_path"]))
+                    $out = tryPartialCallable(Str::of($section["partial_path"]))
                         ->map(apply($data));
 
                     // $out = Str::of($c(array_merge($data, [
@@ -497,14 +616,15 @@ function renderPageContent($page_id, $data = []) {
 
                     break;
                 case "page_content":
+                    // "field_id" is the outer unique ID for each page type, e.g. "universal_page_sections"
+                    // and contains the page sections (array)
 
-                    $sections = carbon_get_post_meta( $page_id, $section["field_id"] );
+                    return tryCarbonPostMeta($section["field_id"], $page_id)
+                        ->map(flipN(2, 'concatPageSections')([
+                            "page_template" => $slug
+                        ]))
+                        ->getOrElse("");
 
-                    $sections = Lst::of($sections);
-                    return concatPageSections($sections, [
-                        "page_template" => $slug,
-                    ]);
-               
                     break;
                 case "partial_page":
                     //dump($section);
