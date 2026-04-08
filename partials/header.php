@@ -61,16 +61,26 @@ return function($data = []) {
     $flex_end_content = concatPartials($partials);
 
 
-    // this just popped up Wed Jan 14 at 14:02
+    $config_section_extra_classes = trim((string) ($data['section_extra_classes'] ?? ''));
     $header_class_extras = $data['header_class_extras'] ?? '';
-    $section_extra_classes = $data['section_class_extras'] ?? '';
+
+    $section_extra_parts = [];
+    if (! empty($pin_top)) {
+        $section_extra_parts[] = 'pin-top';
+    }
+    if ($config_section_extra_classes !== '') {
+        foreach (preg_split('/\s+/', $config_section_extra_classes, -1, PREG_SPLIT_NO_EMPTY) as $c) {
+            $section_extra_parts[] = $c;
+        }
+    }
+    $section_extra_classes = implode(' ', array_unique($section_extra_parts));
 
     $container_class = "";
     $base_url = "";
     
     // die;
     # end data processing
-	return "<nav class=\"navbar navbar-expand-lg py-0\" aria-label=\"Offcanvas navbar large\" data-bp-edit-url=\"/wp-admin/post.php?post=123&action=edit\"><div class=\"{$container_class} border-bottom py-3 mb-3\"><div class=\"col-md-3 mb-2 mb-md-0\">{$site_name_anchor}</div><button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"offcanvas\" data-bs-target=\"#offcanvasNavbar2\" aria-controls=\"offcanvasNavbar2\" aria-label=\"Toggle navigation\"><span class=\"navbar-toggler-icon\"></span></button><div class=\"offcanvas offcanvas-end\" tabindex=\"-1\" id=\"offcanvasNavbar2\" aria-labelledby=\"offcanvasNavbar2Label\"><div class=\"offcanvas-header\">{$site_name_anchor}<!-- <h5 class=\"offcanvas-title\" id=\"offcanvasNavbar2Label\">Blueprint</h5> --><button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"offcanvas\" aria-label=\"Close\"></button></div><div class=\"offcanvas-body d-flex flex-wrap align-items-center text-center\"><ul class=\"nav list-group list-group-sm col-12 col-md-auto mb-2 mb-md-0 flex-grow-1 pe-3 \" data-bp-edit-url=\"/wp-admin/post.php?post=123&action=edit\"><!-- align-items-center justify-content-center justify-content-md-between --><li class=\"nav-item\"><a class=\"nav-link\" href=\"{$base_url}/manifesto/\">Manifesto</a></li><li class=\"nav-item\"><a class=\"nav-link active\" aria-current=\"page\" href=\"{$base_url}/showcase/\">Showcase</a></li><li class=\"nav-item\"><a class=\"nav-link\" href=\"{$base_url}/blog/\">Blog</a></li><!-- <li class=\"nav-item dropdown\">
+	return "<nav class=\"navbar navbar-expand-lg py-0\" aria-label=\"Offcanvas navbar large\" data-bp-edit-path=\"{$bpEditPath}\"><div class=\"{$container_class} border-bottom py-3 mb-3\"><div class=\"col-md-3 mb-2 mb-md-0\">{$site_name_anchor}</div><button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"offcanvas\" data-bs-target=\"#offcanvasNavbar2\" aria-controls=\"offcanvasNavbar2\" aria-label=\"Toggle navigation\"><span class=\"navbar-toggler-icon\"></span></button><div class=\"offcanvas offcanvas-end\" bp-edit-url=\"/wp-admin/post.php?post=123&action=edit\" tabindex=\"-1\" id=\"offcanvasNavbar2\" aria-labelledby=\"offcanvasNavbar2Label\"><div class=\"offcanvas-header\">{$site_name_anchor}<!-- <h5 class=\"offcanvas-title\" id=\"offcanvasNavbar2Label\">Blueprint</h5> --><button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"offcanvas\" aria-label=\"Close\"></button></div><div class=\"offcanvas-body d-flex flex-wrap align-items-center text-center\"><ul class=\"nav list-group list-group-sm col-12 col-md-auto mb-2 mb-md-0 flex-grow-1 pe-3 \" data-bp-edit-path=\"{$bpEditPath}\"><!-- align-items-center justify-content-center justify-content-md-between --><li class=\"nav-item\"><a class=\"nav-link\" href=\"{$base_url}/about/\">About</a></li><li class=\"nav-item\"><a class=\"nav-link active\" aria-current=\"page\" href=\"{$base_url}/pages/\">Pages</a></li><li class=\"nav-item\"><a class=\"nav-link\" href=\"{$base_url}/docs/\">Docs</a></li><!-- <li class=\"nav-item dropdown\">
                         <a class=\"nav-link dropdown-toggle\" href=\"#\" role=\"button\" data-bs-toggle=\"dropdown\" aria-expanded=\"false\"> Dropdown </a>
                         <ul class=\"dropdown-menu start-50 translate-middle-x\">
                             <li>

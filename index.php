@@ -15,10 +15,12 @@
     $admin_attr = $can_edit
         ? ' data-admin-url="' . esc_url(admin_url()) . '" data-post-id="' . esc_attr(get_the_ID()) . '"'
         : '';
+
+    $content = isset($content) ? $content : "";
 ?>
-<body <?php body_class('d-flex flex-column min-vh-100' . ($can_edit ? ' bp-edit' : '')); ?><?= $admin_attr; ?>>
+<body <?php body_class('d-flex flex-column min-vh-100' . ($can_edit ? ' bp-edit' : '')); ?><?= $admin_attr; ?> style="background-color:rgb(240, 240, 240);">
     <?php echo $content; ?>
     <?php wp_footer(); ?>
     <script src="<?php echo esc_url(get_template_directory_uri() . '/js/theme.js'); ?>"></script>
 </body>
-</html> 
+</html>

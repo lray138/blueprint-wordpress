@@ -1,6 +1,6 @@
 <?php
 
-use lray138\G2\Lst;
+use lray138\G2\{Str, Lst, Kvm};
 use function lray138\G2\dump;
 
 require "vendor/autoload.php";
@@ -14,7 +14,6 @@ require_once get_template_directory() . '/inc/admin/clone-carbon-page.php';
 function renderBlogBgCardList(Lst $pages) {
 
     return $pages->map(function(WP_Post $x) {
-
         $data = [
             "bg_img" => get_the_post_thumbnail_url($x->ID, 'large'),
             "title" => $x->post_title,
@@ -24,7 +23,7 @@ function renderBlogBgCardList(Lst $pages) {
         return tryPartial("components/card/bg-cover", $data)->getOrElse('');
         
     })
-        ->join('');
+    ->join('');
 }
 
 /**
@@ -623,3 +622,156 @@ body.bp-edit [data-bp-edit] .bp-edit-button {
 }
 CSS);
 });
+
+
+function getPagesByTemplate($template): Lst {
+    $pages = get_posts([
+        'post_type'        => 'page',
+        'posts_per_page'   => -1,
+        'meta_key'         => '_wp_page_template',
+        'meta_value'       => $template,
+        'orderby'          => ['menu_order' => 'ASC', 'post_title' => 'ASC'],
+        'suppress_filters' => false,
+    ]);
+
+    if ($pages === []) {
+        return Lst::of([]);
+    }
+
+    $cmp = static function (WP_Post $a, WP_Post $b): int {
+        $by_order = (int) $a->menu_order <=> (int) $b->menu_order;
+
+        return $by_order !== 0 ? $by_order : strcasecmp($a->post_title, $b->post_title);
+    };
+
+    $children = [];
+    foreach ($pages as $p) {
+        $pid = (int) $p->post_parent;
+        $children[$pid][] = $p;
+    }
+
+    foreach ($children as &$group) {
+        usort($group, $cmp);
+    }
+
+    unset($group);
+
+    $in_set = array_fill_keys(wp_list_pluck($pages, 'ID'), true);
+    $roots = array_values(array_filter($pages, static function (WP_Post $p) use ($in_set): bool {
+        $pid = (int) $p->post_parent;
+
+        return $pid === 0 || ! isset($in_set[$pid]);
+    }));
+    usort($roots, $cmp);
+
+    $out = [];
+    $emit = static function (WP_Post $p) use (&$emit, &$out, $children): void {
+        $out[] = $p;
+        $id = (int) $p->ID;
+        if (! empty($children[$id])) {
+            foreach ($children[$id] as $child) {
+                $emit($child);
+            }
+        }
+    };
+
+    foreach ($roots as $root) {
+        $emit($root);
+    }
+
+    $emitted = array_fill_keys(wp_list_pluck($out, 'ID'), true);
+    foreach ($pages as $p) {
+        if (! isset($emitted[$p->ID])) {
+            $out[] = $p;
+        }
+    }
+
+    return Lst::of($out);
+}
+
+function getCategoryPages($category_slug = null): Lst {
+    return getPagesByTemplate('templates/category-page.php');
+}
+
+function getGalleryPages($category_slug = null): Lst {
+    return getPagesByTemplate('templates/gallery-page.php');
+}
+
+function categoryPagesToCard(Lst $pages): Str {
+
+    return $pages->map(function(WP_Post $page) {
+        return [
+            "title" => $page->post_title,
+            "href" => get_permalink($page->ID),
+            "img_url" => get_the_post_thumbnail_url($page->ID, 'large'),
+            "col_class" => "col-12 col-sm-6 col-md-4",
+            "simple" => true,
+        ];
+        })
+        ->map(function($x) {
+            return tryPartial("/site/partials/components/gallery-card.php", $x)
+                ->getOrElse("");
+        })
+        ->join("")
+        ->map(function($x) {
+            return tryPartial("/site/partials/components/gallery-card-grid.php", [
+                "cardsHtml" => $x,
+            ])
+            ->getOrElse("");
+        });
+
+}
+
+function galleryPagesToCard(Lst $pages): Str {
+    return categoryPagesToCard($pages)
+        // ->pipe(fn(Str $s) => tryPartial("/bp/wraps/section-one-col.php", [
+        //     "content" => $s,
+        // ])
+        ;
+}
+
+add_action('init', function () {
+    $labels = [
+        'name'              => _x('Media categories', 'taxonomy general name', 'blueprint'),
+        'singular_name'     => _x('Media category', 'taxonomy singular name', 'blueprint'),
+        'search_items'      => __('Search media categories', 'blueprint'),
+        'all_items'         => __('All media categories', 'blueprint'),
+        'parent_item'       => __('Parent media category', 'blueprint'),
+        'parent_item_colon' => __('Parent media category:', 'blueprint'),
+        'edit_item'         => __('Edit media category', 'blueprint'),
+        'update_item'       => __('Update media category', 'blueprint'),
+        'add_new_item'      => __('Add new media category', 'blueprint'),
+        'new_item_name'     => __('New media category name', 'blueprint'),
+        'menu_name'         => __('Media categories', 'blueprint'),
+    ];
+
+    register_taxonomy('media_category', ['attachment'], [
+        'labels'            => $labels,
+        'hierarchical'      => true,
+        'public'            => false,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'show_in_nav_menus' => false,
+        'show_in_rest'      => true,
+        'rest_base'         => 'media_category',
+        'rewrite'           => false,
+    ]);
+});
+
+/**
+ * WordPress 6.4+ defaults wp_attachment_pages_enabled to off for new sites, so pretty
+ * attachment URLs (e.g. /slug/) 301 to the raw file in wp-includes/canonical.php.
+ * This theme implements attachment.php / image.php — keep attachment pages on.
+ *
+ * To persist in the database instead: wp option set wp_attachment_pages_enabled 1
+ * Or remove this filter if you prefer redirect-to-file behavior.
+ */
+add_filter('pre_option_wp_attachment_pages_enabled', static function ($pre) {
+    return '1';
+});
+
+/**
+ * Attachment permalinks: /photos|videos|media/YYYY/MM/slug/ — see inc/attachment-date-permalinks.php. Flush: Settings → Permalinks → Save.
+ */
+require_once get_template_directory() . '/inc/attachment-date-permalinks.php';
+

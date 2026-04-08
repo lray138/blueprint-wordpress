@@ -49,8 +49,6 @@ carousel.addEventListener(\"slid.bs.carousel\", () => {
 });
 
 });
-
-
 </script>";
 };
 

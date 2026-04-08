@@ -9,8 +9,6 @@ $page_title = get_the_title();
 // var_dump(get_template_directory_uri());
 // var_dump(get_site_url());
 
-
-
 $content = renderPageContent(get_the_ID(), [
     "site_url" => get_site_url() . "/"
 ]);

@@ -14,4 +14,3 @@ $content = renderPageContent(get_the_ID(), [
 ]);
 
 include(get_template_directory() . '/index.php');
-

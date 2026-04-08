@@ -1,6 +1,7 @@
 <?php
 
-use lray138\G2\{Kvm, Str, Lst,Nil, Num, Result};
+use lray138\G2\{Kvm, Str, Lst, Nil, Num, Result};
+use lray138\G2\Result\Err;
 use function lray138\g2\dump;
 
 function handle_partial_page(Kvm $partial_page): Str {
@@ -292,10 +293,23 @@ function handle_partial_callable(Kvm $partial): Str {
         ->getOrElse(Str::of('partial not found'));
 }
 
-function tryPartial($partial, $args = []): Result {
-    $out = tryPartialCallable(Str::of($partial))
-        ->map(fn($callable) => Str::of($callable($args)));
-    return $out;
+/**
+ * One argument: Ok(callable) after loading the partial PHP file (same path resolution as tryPartialCallable).
+ * Two arguments: Ok(Str) with rendered HTML from callable($data).
+ */
+function tryPartial(...$args): Result
+{
+    $n = count($args);
+    if ($n === 1) {
+        return tryPartialCallable(Str::of($args[0]));
+    }
+
+    if ($n === 2) {
+        return tryPartialCallable(Str::of($args[0]))
+            ->map(fn ($callable) => Str::of($callable($args[1])));
+    }
+
+    return Err::of('tryPartial: expected 1 or 2 arguments, got ' . $n);
 }
 
 function handle_query_render(Kvm $partial): Str {

@@ -177,62 +177,104 @@ function concatPartials(Lst $partials): Str {
     return $out;
 }
 
+/**
+ * Ordered filesystem candidates for a partial slug (bare name, path, or .php file).
+ * Handles: heading → components/heading/index.php, components/gallery-card.php as-is, header aliases, etc.
+ *
+ * @return list<string>
+ */
+function bp_build_partial_path_candidates(string $partials_root, string $rel): array {
+    $partials_root = rtrim($partials_root, '/');
+    $rel = trim(str_replace('\\', '/', $rel), '/');
+    $seen = [];
+    $out = [];
+    $add = static function (string $path) use (&$seen, &$out): void {
+        if ($path === '' || isset($seen[$path])) {
+            return;
+        }
+        $seen[$path] = true;
+        $out[] = $path;
+    };
+
+    if ($rel === '') {
+        return [];
+    }
+
+    $middles = ['components', 'patterns', 'elements'];
+
+    $stem = preg_match('/\.php$/i', $rel) ? substr($rel, 0, -4) : $rel;
+    $stem = trim($stem, '/');
+
+    // Legacy: header partial is partials/header.php not partials/header/index.php
+    if ($rel === 'header/index.php' || $stem === 'header/index' || $stem === 'header') {
+        $add($partials_root . '/header.php');
+    }
+
+    // Exact path under partials root (e.g. components/gallery-card.php)
+    $add($partials_root . '/' . $rel);
+
+    $stem_has_middle = false;
+    foreach ($middles as $m) {
+        if (strncmp($stem, $m . '/', strlen($m) + 1) === 0) {
+            $stem_has_middle = true;
+            $add($partials_root . '/' . $stem . '.php');
+            $add($partials_root . '/' . $stem . '/index.php');
+            break;
+        }
+    }
+
+    if (! $stem_has_middle) {
+        $add($partials_root . '/' . $stem . '.php');
+        $add($partials_root . '/' . $stem . '/index.php');
+
+        foreach ($middles as $m) {
+            $add($partials_root . '/' . $m . '/' . $stem . '.php');
+            $add($partials_root . '/' . $m . '/' . $stem . '/index.php');
+        }
+    }
+
+    return $out;
+}
+
 function getPartialPath(Str $type) {
 
-    $callable_path  = $type->contains("/")
-        ->fold(
-            fn() => $type->append("/index.php"), 
-            fn() => $type->append(".php")
-        );
+    $type_str = $type->get();
+    $partials_root = dirname(__DIR__) . '/partials';
 
-    if($callable_path == "header/index.php") {
-        $callable_path = Str::of("header.php");
+    if (strpos($type_str, '/site/') === 0) {
+        $partials_root = WP_CONTENT_DIR . '/site/partials';
+        $type = Str::of(ltrim(substr($type_str, strlen('/site/')), '/'));
+    } elseif (strpos($type_str, '/bp/') === 0) {
+        $type = Str::of(ltrim(substr($type_str, strlen('/bp/')), '/'));
     }
 
-    if($callable_path->contains("docs")->isTrue()) {
-        $callable = dirname(__DIR__) . "/partials/{$callable_path}";
-    
-        if(file_exists($callable)) {
-            return Str::of($callable);
+    $rel = ltrim($type->get(), '/');
+    if (strncmp($rel, 'partials/', strlen('partials/')) === 0) {
+        $rel = substr($rel, strlen('partials/'));
+    } elseif ($rel === 'partials') {
+        $rel = '';
+    }
+    $rel = ltrim($rel, '/');
+
+    if ($rel === '') {
+        return Nil::unit();
+    }
+
+    foreach (bp_build_partial_path_candidates($partials_root, $rel) as $candidate) {
+        if (file_exists($candidate)) {
+            return Str::of($candidate);
         }
-
-        return Str::of($callable);
-    }
-
-    $callable = dirname(__DIR__) . "/partials/components/{$callable_path}";
-    
-    if(file_exists($callable)) {
-        return Str::of($callable);
-    }
-
-    $callable = dirname(__DIR__) . "/partials/patterns/{$callable_path}";
-    
-    if(file_exists($callable)) {
-        return Str::of($callable);
-    }
-
-    $callable = dirname(__DIR__) . "/partials/elements/{$callable_path}";
-    
-    if(file_exists($callable)) {
-        return Str::of($callable);
-    }
-
-    $callable = dirname(__DIR__) . "/partials/{$callable_path}";
-    
-    if(file_exists($callable)) {
-        return Str::of($callable);
     }
 
     return Nil::unit();
 }
 
 function tryPartialPath($type) {
-    $path = getPartialPath(Str::of($type));
-    
-    return $path instanceof Str 
+    $path = getPartialPath($type instanceof Str ? $type : Str::of($type));
+
+    return $path instanceof Str
         ? Ok::of($path)
-        : Err::of("Partial not found")
-        ;
+        : Err::of("Partial not found");
 }
 
 function ensurePhp(Str $t): Str
@@ -249,7 +291,7 @@ const ensurePhp = __NAMESPACE__ . '\\ensurePhp';
 // the "_type" i.e. partial name
 function tryPartialCallable(Str $type): Result {
     return tryPartialPath($type)
-        ->map(fn($x) => include($x));
+        ->map(fn(Str $x) => include($x->get()));
 }
 
 function bp_get_page_by_bp_id($bp_id) {
@@ -297,6 +339,7 @@ function handleSectionPartial(Kvm $partial): Str {
             => $r->map(function(Str $callable) use ($partial) {
                 // this was original demo method and the ultimate override
                 if(function_exists($callable->get())) {
+
                     $content = Str::of($callable->get()($partial));
                     
                     $val = $partial->mprop("bp_id")
@@ -320,6 +363,7 @@ function handleSectionPartial(Kvm $partial): Str {
             ->getOrElse(Either::left(''))
         )
         ->map(function() use ($partial) {
+          
             $controller = $partial->prop('_type')->wrap("handle_", "_data")->get();
     
             if(function_exists($controller)) {
@@ -506,29 +550,150 @@ function getDefaultPageContent($t): Str {
 }
 
 function pinTopHeader($config_items): bool {
-    foreach($config_items as $config_item) {
-        if($config_item["_type"] === "header") {
-            foreach($config_item["header_attrs"] as $header_item) {
-                if($header_item["_type"] == "pin_top" && $header_item["pin_top"] == true) {
+    if (empty($config_items) || ! is_array($config_items)) {
+        return false;
+    }
+
+    foreach ($config_items as $config_item) {
+        if (! is_array($config_item)) {
+            continue;
+        }
+
+        $type = $config_item['_type'] ?? '';
+
+        // Footer layout also exposes pin_top / header extras (see getPageConfigFields).
+        if ($type === 'footer_items' && ! empty($config_item['pin_top'])) {
+            return true;
+        }
+
+        $attr_lists = [];
+        if ($type === 'page_config_header_items' && isset($config_item['header_config_attrs'])) {
+            $attr_lists[] = $config_item['header_config_attrs'];
+        }
+        if ($type === 'header' && isset($config_item['header_attrs'])) {
+            $attr_lists[] = $config_item['header_attrs'];
+        }
+        if ($type === 'header_items' && isset($config_item['header_attrs'])) {
+            $attr_lists[] = $config_item['header_attrs'];
+        }
+
+        foreach ($attr_lists as $header_attrs) {
+            if (! is_array($header_attrs)) {
+                continue;
+            }
+            foreach ($header_attrs as $header_item) {
+                if (($header_item['_type'] ?? '') === 'pin_top' && ! empty($header_item['pin_top'])) {
                     return true;
                 }
             }
         }
     }
+
     return false;
 }
 
 function getHeaderClassExtras($config_items): string {
-    foreach($config_items as $config_item) {
-        if($config_item["_type"] === "header") {
-            foreach($config_item["header_attrs"] as $header_item) {
-                if($header_item["_type"] == "class" && !empty($header_item["class"]) ) {
-                    return $header_item["class"];
+    if (empty($config_items) || ! is_array($config_items)) {
+        return '';
+    }
+
+    foreach ($config_items as $config_item) {
+        if (! is_array($config_item)) {
+            continue;
+        }
+
+        $type = $config_item['_type'] ?? '';
+
+        if ($type === 'footer_items' && ! empty($config_item['header_class_extras'])) {
+            return (string) $config_item['header_class_extras'];
+        }
+
+        $attr_lists = [];
+        if ($type === 'page_config_header_items' && isset($config_item['header_config_attrs'])) {
+            $attr_lists[] = $config_item['header_config_attrs'];
+        }
+        if ($type === 'header' && isset($config_item['header_attrs'])) {
+            $attr_lists[] = $config_item['header_attrs'];
+        }
+
+        foreach ($attr_lists as $header_attrs) {
+            if (! is_array($header_attrs)) {
+                continue;
+            }
+            foreach ($header_attrs as $header_item) {
+                if (($header_item['_type'] ?? '') === 'class' && ! empty($header_item['class'])) {
+                    return (string) $header_item['class'];
                 }
             }
         }
     }
-    return "";
+
+    return '';
+}
+
+/**
+ * Data for blueprint muuri-item.php partial from an attachment post.
+ */
+function bp_muuri_item_vars_from_attachment(WP_Post $post): array
+{
+    $full = wp_get_attachment_image_url($post->ID, 'full');
+    $thumb = $full;
+    if (! $full) {
+        $full = wp_get_attachment_url($post->ID);
+    }
+    if (! $thumb) {
+        $thumb = $full ?: '';
+    }
+
+    $caption = wp_get_attachment_caption($post->ID);
+    $figcaption_html = $caption !== ''
+        ? '<figcaption class="small text-secondary mt-1 px-1">' . esc_html($caption) . '</figcaption>'
+        : '';
+
+    $alt_text = (string) get_post_meta($post->ID, '_wp_attachment_image_alt', true);
+    if ($alt_text === '') {
+        $alt_text = $post->post_title;
+    }
+
+    return [
+        'itemId' => (string) $post->ID,
+        'title' => $post->post_title,
+        'href' => get_attachment_link($post->ID),
+        'fullSrc' => $full ?: '',
+        'thumbSrc' => $thumb,
+        'altText' => $alt_text,
+        'figcaptionHtml' => $figcaption_html,
+        'bpGalleryOpts' => wp_json_encode(['loop' => true, 'gallery' => '#gallery']),
+    ];
+}
+
+/**
+ * Attachment IDs from Carbon media_gallery / gallery field value (handles int or row arrays).
+ *
+ * @param mixed $raw Value from carbon_get_post_meta( $id, 'gallery' ).
+ * @return int[]
+ */
+function bp_gallery_field_attachment_ids($raw): array
+{
+    if (! is_array($raw)) {
+        return [];
+    }
+
+    $out = [];
+    foreach ($raw as $row) {
+        if (is_numeric($row)) {
+            $out[] = (int) $row;
+            continue;
+        }
+        if (is_array($row)) {
+            $id = $row['id'] ?? $row['attachment_id'] ?? null;
+            if (is_numeric($id)) {
+                $out[] = (int) $id;
+            }
+        }
+    }
+
+    return array_values(array_filter(array_unique($out)));
 }
 
 
@@ -540,8 +705,8 @@ function renderPageContent($page_id, $data = []) {
 
     // check footer options
     $slug = get_page_template_slug($page_id);
-
-    if(empty($slug)) {
+    
+    if(is_attachment($page_id) || empty($slug)) {
         $slug = "default-page";
     }
 
@@ -555,7 +720,7 @@ function renderPageContent($page_id, $data = []) {
                 ? Result::err("Template sections not found") 
                 : Result::ok(Lst::of($r));            
         })
-        ->map(fn(Lst $sections) => handleTemplateSections($sections, $config_items, $page_id, $slug))
+        ->map(fn(Lst $sections) => handleTemplateSections($sections, $config_items, $page_id, $slug, $data))
         ->getOrElse("");
 }
 
@@ -571,29 +736,35 @@ function tryCarbonPostMeta(...$args): Result
     return call_user_func_array(curryN(2, $f), $args);
 }
 
-function handleTemplateSections(Lst $sections, $config_items, $page_id, $slug) {
+function handleTemplateSections(Lst $sections, $config_items, $page_id, $slug, $data = []) {
     return $sections
-        ->map(function($section) use ($config_items, $page_id, $slug) {
+        ->map(function($section) use ($config_items, $page_id, $slug, $data) {
 
             switch($section["_type"]) {
                 case "partial_path":
                     $data = [];
 
                     // returns a Maybe
-                    if(in_array($section["partial_path"], ["header", "header/original"])) {
-                        if(pinTopHeader($config_items)) {
-                            $data["section_class_extras"] = "pin-top";
+                    if(in_array($section["partial_path"], ["header", "header/original", "/site/header.php"])) {
+                        $nav_parts = [];
+                        if (pinTopHeader($config_items)) {
+                            $nav_parts[] = 'pin-top';
                         }
-
                         $header_class_extras = getHeaderClassExtras($config_items);
-                        if(!empty($header_class_extras)) {
-                            $data["header_class_extras"] = $header_class_extras;
+                        if ($header_class_extras !== '') {
+                            foreach (preg_split('/\s+/', trim($header_class_extras), -1, PREG_SPLIT_NO_EMPTY) as $c) {
+                                $nav_parts[] = $c;
+                            }
+                        }
+                        if (! empty($nav_parts)) {
+                            $data['section_extra_classes'] = implode(' ', array_unique($nav_parts));
                         }
                     }
 
                     // looks like we are assuming 
                     $out = tryPartialCallable(Str::of($section["partial_path"]))
-                        ->map(apply($data));
+                        ->map(apply($data))
+                        ->getOrElse("partial path not found");
 
                     // $out = Str::of($c(array_merge($data, [
                         // "data-bp-edit-url" => tryGetPartialPath($section["partial_path"])
@@ -618,6 +789,10 @@ function handleTemplateSections(Lst $sections, $config_items, $page_id, $slug) {
                 case "page_content":
                     // "field_id" is the outer unique ID for each page type, e.g. "universal_page_sections"
                     // and contains the page sections (array)
+
+                    if(isset($data["content"])) {
+                        return Str::of($data["content"]);
+                    }
 
                     return tryCarbonPostMeta($section["field_id"], $page_id)
                         ->map(flipN(2, 'concatPageSections')([
@@ -769,8 +944,8 @@ function markCurrentNavLink(array $list, int $currentPageId, string $activeClass
         }
         unset($component);
     }
+    
     unset($item);
-
     return $list;
 }
 

@@ -131,6 +131,12 @@ add_action('pre_get_posts', function (WP_Query $q) {
     // Only apply when explicitly present
     if (!isset($_GET['post_parent'])) return;
 
+    // Trash adds post_status=trash. A leftover post_parent from "View Children" would limit Trash
+    // to only those direct children, so other trashed pages never appear.
+    if (isset($_GET['post_status']) && (string) $_GET['post_status'] === 'trash') {
+        return;
+    }
+
     // Apply the filter: show only direct children of that parent
     $q->set('post_parent', $parent_id);
 

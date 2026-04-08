@@ -1,10 +1,13 @@
 <?php
 # start use
+use lray138\G2\Kvm;
 # end use
 
 return function($data = []) { 
 	# start data processing
     extract($data);
+    $prop = fn($key) => isset($data[$key]) ? $data[$key] : "";
+    $text = $prop('quote');
     # end data processing
 	return "<blockquote class=\"blockquote text-center\"><!-- Brand Image --><!-- <div class=\"img-fluid mb-5 mb-md-7 mx-auto\" style=\"max-width: 120px; color: #CB2027;\"></div> --><p class=\"mb-4 mb-md-4\">“{$text}”</p><div class=\"mb-0 blockquote-footer\"><!-- Avatar --><!-- <div class=\"avatar me-3\">
             <img src=\"assets/img/avatars/avatar-1.jpg\" class=\"avatar-img rounded-circle\" alt=\"...\">
