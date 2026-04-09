@@ -127,8 +127,7 @@
     <meta name="twitter:description" content="<?php echo esc_attr($bp_home_og_description); ?>">
     <?php endif; ?>
     <?php if ($bp_share_image_url !== '') : ?>
-    <meta property="og:image" content="<?php echo esc_url($bp_share_image_url); ?>">
-    <meta name="image" content="<?php echo esc_url($bp_share_image_url); ?>">
+    <meta name="image" property="og:image" content="<?php echo esc_url($bp_share_image_url); ?>">
         <?php if (strpos($bp_share_image_url, 'https://') === 0) : ?>
     <meta property="og:image:secure_url" content="<?php echo esc_url($bp_share_image_url); ?>">
         <?php endif; ?>
