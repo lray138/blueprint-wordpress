@@ -58,7 +58,15 @@
     if ($bp_share_image_url !== '') {
         $bp_share_image_url = esc_url($bp_share_image_url);
     }
+
+    $bp_home_og_description = is_front_page()
+        ? 'Photography from Atlanta focused on authentic moments, creative energy, and stories worth remembering.'
+        : '';
     ?>
+    <?php if ($bp_home_og_description !== '') : ?>
+    <meta property="og:description" content="<?php echo esc_attr($bp_home_og_description); ?>">
+    <meta name="twitter:description" content="<?php echo esc_attr($bp_home_og_description); ?>">
+    <?php endif; ?>
     <?php if ($bp_share_image_url !== '') : ?>
     <meta property="og:image" content="<?php echo $bp_share_image_url; ?>">
         <?php if (strpos($bp_share_image_url, 'https://') === 0) : ?>
