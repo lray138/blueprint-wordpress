@@ -240,8 +240,27 @@ function getPartialPath(Str $type) {
 
     $type_str = $type->get();
     $partials_root = dirname(__DIR__) . '/partials';
+    // When the path already includes …/partials/, treat the remainder as relative to that root only
+    // (do not strip a second "partials/" segment). Also enables IDE paths like /blueprint/partials/....
+    $strip_leading_partials_segment = true;
 
-    if (strpos($type_str, '/site/') === 0) {
+    if (strncmp($type_str, '/site/partials/', strlen('/site/partials/')) === 0) {
+        $partials_root = WP_CONTENT_DIR . '/site/partials';
+        $type = Str::of(substr($type_str, strlen('/site/partials/')));
+        $strip_leading_partials_segment = false;
+    } elseif ($type_str === '/site/partials') {
+        $partials_root = WP_CONTENT_DIR . '/site/partials';
+        $type = Str::of('');
+        $strip_leading_partials_segment = false;
+    } elseif (strncmp($type_str, '/blueprint/partials/', strlen('/blueprint/partials/')) === 0) {
+        $partials_root = dirname(__DIR__) . '/partials';
+        $type = Str::of(substr($type_str, strlen('/blueprint/partials/')));
+        $strip_leading_partials_segment = false;
+    } elseif ($type_str === '/blueprint/partials') {
+        $partials_root = dirname(__DIR__) . '/partials';
+        $type = Str::of('');
+        $strip_leading_partials_segment = false;
+    } elseif (strpos($type_str, '/site/') === 0) {
         $partials_root = WP_CONTENT_DIR . '/site/partials';
         $type = Str::of(ltrim(substr($type_str, strlen('/site/')), '/'));
     } elseif (strpos($type_str, '/bp/') === 0) {
@@ -249,9 +268,9 @@ function getPartialPath(Str $type) {
     }
 
     $rel = ltrim($type->get(), '/');
-    if (strncmp($rel, 'partials/', strlen('partials/')) === 0) {
+    if ($strip_leading_partials_segment && strncmp($rel, 'partials/', strlen('partials/')) === 0) {
         $rel = substr($rel, strlen('partials/'));
-    } elseif ($rel === 'partials') {
+    } elseif ($strip_leading_partials_segment && $rel === 'partials') {
         $rel = '';
     }
     $rel = ltrim($rel, '/');

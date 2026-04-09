@@ -775,3 +775,63 @@ add_filter('pre_option_wp_attachment_pages_enabled', static function ($pre) {
  */
 require_once get_template_directory() . '/inc/attachment-date-permalinks.php';
 
+
+
+
+
+////
+
+/**
+ * HTML attribute string from a Kvm of attribute key → scalar / Str / bool values.
+ * Mirrors webpack/src/blueprint/utils/attrsReducer.js.
+ *
+ * - Omits class_add (composition only).
+ * - Maps class_names → class.
+ * - Skips null and false; true emits a boolean attribute (key only).
+ * - Escapes attribute values for HTML.
+ */
+if (! function_exists('kvm_attrs_reduce_to_string')) {
+    function kvm_attrs_reduce_to_string(Kvm $attrs): string
+    {
+        $raw = $attrs->get();
+        if (! is_array($raw)) {
+            return '';
+        }
+
+        $acc = '';
+        ksort($raw);
+
+        foreach ($raw as $key => $value) {
+            if ($key === 'class_add') {
+                continue;
+            }
+
+            $v = $value;
+            if ($v instanceof Str) {
+                $v = $v->get();
+            } elseif (is_object($v) && method_exists($v, 'extract')) {
+                $v = $v->extract();
+            }
+
+            if ($v === null || $v === false) {
+                continue;
+            }
+
+            $attrKey = $key === 'class_names' ? 'class' : (string) $key;
+
+            if ($v === true) {
+                $chunk = $attrKey;
+            } else {
+                $chunk = sprintf(
+                    '%s="%s"',
+                    $attrKey,
+                    htmlspecialchars((string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+                );
+            }
+
+            $acc = $acc === '' ? $chunk : $acc . ' ' . $chunk;
+        }
+
+        return $acc;
+    }
+}
