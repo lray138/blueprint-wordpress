@@ -104,7 +104,7 @@
         }
     }
     ?>
-    <?php wp_head(); ?>
+    <?php /* Open Graph before wp_head(): many crawlers use the first og:image; plugins often inject another in wp_head(). */ ?>
     <?php if ($bp_og_canonical_url !== '') : ?>
     <meta property="og:url" content="<?php echo esc_url($bp_og_canonical_url); ?>">
     <?php endif; ?>
@@ -127,7 +127,8 @@
     <meta name="twitter:description" content="<?php echo esc_attr($bp_home_og_description); ?>">
     <?php endif; ?>
     <?php if ($bp_share_image_url !== '') : ?>
-    <meta name="image" property="og:image" content="<?php echo esc_url($bp_share_image_url); ?>">
+    <meta property="og:image" content="<?php echo esc_url($bp_share_image_url); ?>">
+    <meta name="image" content="<?php echo esc_url($bp_share_image_url); ?>">
         <?php if (strpos($bp_share_image_url, 'https://') === 0) : ?>
     <meta property="og:image:secure_url" content="<?php echo esc_url($bp_share_image_url); ?>">
         <?php endif; ?>
@@ -139,6 +140,7 @@
     <meta property="og:image:height" content="<?php echo esc_attr((string) $bp_share_image_h); ?>">
         <?php endif; ?>
     <?php endif; ?>
+    <?php wp_head(); ?>
     <link rel="stylesheet" href="<?php echo get_template_directory_uri(); ?>/css/theme.css">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <?php if (is_page('contact')) : ?>
