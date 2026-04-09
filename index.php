@@ -127,17 +127,14 @@
     <meta name="twitter:description" content="<?php echo esc_attr($bp_home_og_description); ?>">
     <?php endif; ?>
     <?php if ($bp_share_image_url !== '') : ?>
-    <meta name="image" property="og:image" content="<?php echo esc_url($bp_share_image_url); ?>">
-        <?php if (strpos($bp_share_image_url, 'https://') === 0) : ?>
-    <meta property="og:image:secure_url" content="<?php echo esc_url($bp_share_image_url); ?>">
+    <meta property="og:image" content="<?php echo esc_url($bp_share_image_url); ?>">
+    <?php if ($bp_share_image_w > 0 && $bp_share_image_h > 0) : ?>
+    <meta property="og:image:width" content="<?php echo esc_attr((string) $bp_share_image_w); ?>">
+    <meta property="og:image:height" content="<?php echo esc_attr((string) $bp_share_image_h); ?>">
         <?php endif; ?>
     <meta property="og:image:alt" content="<?php echo esc_attr(wp_strip_all_tags((string) $page_title)); ?>">
     <meta name="twitter:image" content="<?php echo esc_url($bp_share_image_url); ?>">
     <meta name="twitter:card" content="summary_large_image">
-        <?php if ($bp_share_image_w > 0 && $bp_share_image_h > 0) : ?>
-    <meta property="og:image:width" content="<?php echo esc_attr((string) $bp_share_image_w); ?>">
-    <meta property="og:image:height" content="<?php echo esc_attr((string) $bp_share_image_h); ?>">
-        <?php endif; ?>
     <?php endif; ?>
     <?php wp_head(); ?>
     <link rel="stylesheet" href="<?php echo get_template_directory_uri(); ?>/css/theme.css">
