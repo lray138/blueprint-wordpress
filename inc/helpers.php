@@ -785,7 +785,7 @@ function handleTemplateSections(Lst $sections, $config_items, $page_id, $slug, $
 
                     // looks like we are assuming 
                     $out = tryPartialCallable(Str::of($section["partial_path"]))
-                        ->map(apply($data))
+                        ->map(apply(array_merge($data, ["page_config" => $config_items])))
                         ->getOrElse("partial path not found");
 
                     // $out = Str::of($c(array_merge($data, [
