@@ -674,6 +674,8 @@ function bp_muuri_item_vars_from_attachment(WP_Post $post): array
         $alt_text = $post->post_title;
     }
 
+    $m = get_attachment_link($post->ID);
+
     return [
         'itemId' => (string) $post->ID,
         'title' => $post->post_title,
@@ -682,6 +684,7 @@ function bp_muuri_item_vars_from_attachment(WP_Post $post): array
         'thumbSrc' => $thumb,
         'altText' => $alt_text,
         'figcaptionHtml' => $figcaption_html,
+        'page_data_attrs' => " data-page-href=\"$m\"",
         'bpGalleryOpts' => wp_json_encode(['loop' => true, 'gallery' => '#gallery']),
     ];
 }
