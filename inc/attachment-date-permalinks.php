@@ -48,6 +48,15 @@ function blueprint_attachment_image_created_timestamp(WP_Post $post): int
         return 0;
     }
 
+    if (! function_exists('wp_read_image_metadata')) {
+        if (defined('ABSPATH') && is_readable(ABSPATH . 'wp-includes/media.php')) {
+            require_once ABSPATH . 'wp-includes/media.php';
+        }
+        if (! function_exists('wp_read_image_metadata')) {
+            return 0;
+        }
+    }
+
     $read = wp_read_image_metadata($file);
     if (! is_array($read) || empty($read['image_meta']['created_timestamp'])) {
         return 0;
