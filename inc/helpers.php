@@ -728,7 +728,9 @@ function renderPageContent($page_id, $data = []) {
     // check footer options
     $slug = get_page_template_slug($page_id);
     
-    if(is_attachment($page_id) || empty($slug)) {
+    if(is_attachment($page_id)) {
+        $slug = "attachment-page";
+    } elseif(empty($slug)) {
         $slug = "default-page";
     }
 
@@ -743,7 +745,7 @@ function renderPageContent($page_id, $data = []) {
                 : Result::ok(Lst::of($r));            
         })
         ->map(fn(Lst $sections) => handleTemplateSections($sections, $config_items, $page_id, $slug, $data))
-        ->getOrElse("");
+        ->getOrElse("No config found.");
 }
 
 function tryCarbonPostMeta(...$args): Result
@@ -1156,4 +1158,155 @@ function blogWrap($content): Str {
     ])
         ->map(fn($x) => Str::of($x))
         ->getOrElse(Str::of("issue with wrap"));
+}
+
+/**
+ * Image attachment template: same viewport-fit behavior as webpack/src/site/templates/photo.ejs.
+ */
+function bp_is_photo_attachment_viewport(): bool
+{
+    return is_attachment() && wp_attachment_is_image();
+}
+
+/**
+ * @return string Full <style>…</style> block (empty when not an image attachment).
+ */
+function bp_photo_viewport_style_tag(): string
+{
+    if (! bp_is_photo_attachment_viewport()) {
+        return '';
+    }
+
+    return '<style>
+            .photo-page-body {
+                min-height: 100dvh;
+                min-height: 100vh;
+            }
+            .photo-page-body .photo-page-main {
+                flex: 1 1 auto;
+                min-height: 0;
+            }
+            .photo-page-body .photo-page-main > section {
+                flex: 1 1 auto;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            .photo-page-body .photo-page-main > section > .container {
+                flex: 1 1 auto;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            .photo-page-body .photo-page-main .row {
+                flex: 1 1 auto;
+                min-height: 0;
+            }
+            .photo-page-body .photo-page-main .col-12 {
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+            }
+            .photo-page-body .photo-page-main .col-12 > .photo-viewport-figure {
+                flex: 1 1 auto;
+                min-height: 0;
+            }
+            .photo-page-body .photo-page-main .photo-viewport-figure {
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                justify-content: flex-start;
+            }
+            .photo-page-body .photo-page-main .photo-viewport-figure figcaption {
+                flex-shrink: 0;
+            }
+            .photo-page-body .photo-page-main .photo-viewport-stage {
+                flex: 1 1 auto;
+                min-height: 0;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .photo-page-body .photo-page-main .photo-viewport-img {
+                max-width: 100%;
+                max-height: 100%;
+                width: auto;
+                height: auto;
+                object-fit: contain;
+            }
+            .photo-page-body #footer {
+                flex-shrink: 0;
+            }
+        </style>';
+}
+
+/**
+ * @return string Full inline <script> (empty when not an image attachment).
+ */
+function bp_photo_viewport_script_tag(): string
+{
+    if (! bp_is_photo_attachment_viewport()) {
+        return '';
+    }
+
+    return '<script>
+            (function () {
+                function viewportBottom() {
+                    var vv = window.visualViewport;
+                    if (vv) return vv.height + vv.offsetTop;
+                    return window.innerHeight;
+                }
+                function reserveBelowStage(stage, figure) {
+                    var h = 0;
+                    var n;
+                    for (n = stage.nextElementSibling; n; n = n.nextElementSibling) {
+                        if (n.tagName === "FIGCAPTION") continue;
+                        h += n.getBoundingClientRect().height;
+                    }
+                    for (n = figure.nextElementSibling; n; n = n.nextElementSibling) {
+                        h += n.getBoundingClientRect().height;
+                    }
+                    return h;
+                }
+                function measure() {
+                    var stage = document.querySelector(".photo-viewport-stage");
+                    var figure = stage && stage.closest(".photo-viewport-figure");
+                    if (!stage || !figure) return;
+                    var stageTop = stage.getBoundingClientRect().top;
+                    var reserve = reserveBelowStage(stage, figure);
+                    var gap = 10;
+                    /* Viewport only; ignore footer and figcaption reserve (caption may sit below fold). */
+                    var bottomEdge = viewportBottom();
+                    var maxH = bottomEdge - stageTop - reserve - gap;
+                    maxH = Math.max(64, maxH);
+                    stage.style.maxHeight = Math.round(maxH) + "px";
+                }
+                function tick() {
+                    requestAnimationFrame(measure);
+                }
+                if (document.readyState === "loading") {
+                    document.addEventListener("DOMContentLoaded", tick);
+                } else {
+                    tick();
+                }
+                window.addEventListener("resize", tick);
+                window.addEventListener("orientationchange", tick);
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener("resize", tick);
+                    window.visualViewport.addEventListener("scroll", tick);
+                }
+                if (typeof ResizeObserver !== "undefined") {
+                    var ro = new ResizeObserver(tick);
+                    var hdr = document.getElementById("site-header-slim");
+                    var fig = document.querySelector(".photo-viewport-figure");
+                    if (hdr) ro.observe(hdr);
+                    if (fig) ro.observe(fig);
+                }
+                window.addEventListener("load", function () {
+                    tick();
+                    setTimeout(tick, 150);
+                });
+            })();
+        </script>';
 }

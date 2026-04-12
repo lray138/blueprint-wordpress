@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title; ?></title>
     <?php
+    $bp_is_photo_attachment = bp_is_photo_attachment_viewport();
+
     $bp_share_image_url = '';
     $bp_share_image_w = 0;
     $bp_share_image_h = 0;
@@ -33,6 +35,16 @@
         }
         if ($bp_share_image_url === '' && function_exists('get_site_icon_url')) {
             $bp_share_image_url = (string) get_site_icon_url(512);
+        }
+    } elseif ($bp_is_photo_attachment) {
+        $bp_att_id = (int) get_queried_object_id();
+        if ($bp_att_id) {
+            $bp_src = wp_get_attachment_image_src($bp_att_id, 'full');
+            if (is_array($bp_src) && ! empty($bp_src[0])) {
+                $bp_share_image_url = $bp_src[0];
+                $bp_share_image_w = (int) $bp_src[1];
+                $bp_share_image_h = (int) $bp_src[2];
+            }
         }
     } elseif (is_singular() && has_post_thumbnail()) {
         $bp_thumb_id = (int) get_post_thumbnail_id();
@@ -137,6 +149,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <?php endif; ?>
     <?php wp_head(); ?>
+    <?php echo bp_photo_viewport_style_tag(); ?>
     <link rel="stylesheet" href="<?php echo get_template_directory_uri(); ?>/css/theme.css">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <?php if (is_page('contact')) : ?>
@@ -152,9 +165,18 @@
         : '';
 
     $content = isset($content) ? $content : "";
+
+    $bp_body_class = 'd-flex flex-column min-vh-100';
+    if ($bp_is_photo_attachment) {
+        $bp_body_class .= ' photo-page-body';
+    }
+    if ($can_edit) {
+        $bp_body_class .= ' bp-edit';
+    }
 ?>
-<body <?php body_class('d-flex flex-column min-vh-100' . ($can_edit ? ' bp-edit' : '')); ?><?= $admin_attr; ?> style="background-color:rgb(240, 240, 240);">
+<body <?php body_class($bp_body_class); ?><?= $admin_attr; ?> style="background-color:rgb(240, 240, 240);">
     <?php echo $content; ?>
+    <?php echo bp_photo_viewport_script_tag(); ?>
     <?php wp_footer(); ?>
     <script src="<?php echo esc_url(get_template_directory_uri() . '/js/theme.js'); ?>"></script>
 </body>

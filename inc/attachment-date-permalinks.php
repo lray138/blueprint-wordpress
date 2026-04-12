@@ -18,7 +18,61 @@
  *
  * Change the date segment:
  *   add_filter('blueprint_attachment_permalink_timestamp', ...)
+ *
+ * Default date: EXIF capture time when available (images), else attachment post_date.
  */
+
+/**
+ * EXIF / image_meta capture timestamp for permalink YYYY/MM, or 0 if unavailable.
+ */
+function blueprint_attachment_image_created_timestamp(WP_Post $post): int
+{
+    if ($post->post_type !== 'attachment') {
+        return 0;
+    }
+    if (strpos((string) $post->post_mime_type, 'image/') !== 0) {
+        return 0;
+    }
+
+    $id = (int) $post->ID;
+    $meta = wp_get_attachment_metadata($id);
+    if (is_array($meta) && ! empty($meta['image_meta']['created_timestamp'])) {
+        $ts = (int) $meta['image_meta']['created_timestamp'];
+        if ($ts > 0) {
+            return $ts;
+        }
+    }
+
+    $file = get_attached_file($id);
+    if (! is_string($file) || $file === '' || ! is_readable($file)) {
+        return 0;
+    }
+
+    $read = wp_read_image_metadata($file);
+    if (! is_array($read) || empty($read['image_meta']['created_timestamp'])) {
+        return 0;
+    }
+
+    $ts = (int) $read['image_meta']['created_timestamp'];
+
+    return $ts > 0 ? $ts : 0;
+}
+
+add_filter('blueprint_attachment_permalink_timestamp', static function (int $ts, WP_Post $post): int {
+    $exif_ts = blueprint_attachment_image_created_timestamp($post);
+    if ($exif_ts <= 0) {
+        return $ts;
+    }
+    // Ignore obviously wrong EXIF (future or ancient garbage).
+    if ($exif_ts > time() + DAY_IN_SECONDS) {
+        return $ts;
+    }
+    if ($exif_ts < strtotime('1970-01-02')) {
+        return $ts;
+    }
+
+    return $exif_ts;
+}, 10, 2);
 
 /**
  * Top-level segment for this attachment: photos, videos, or media.
@@ -154,22 +208,22 @@ add_action('template_redirect', static function () {
 }, 1);
 
 /**
- * One rule: photos | videos | media + year + month + slug → attachment.
+ * One rule: photos | videos | media (+ legacy uploads) + year + month + slug → attachment.
  */
 add_filter('rewrite_rules_array', static function (array $rules): array {
     $attachment_dated = [
-        '^(photos|videos|media)/([0-9]{4})/([0-9]{1,2})/([^/]+)/?$' => 'index.php?attachment=$matches[4]&post_type=attachment',
+        '^(uploads|photos|videos|media)/([0-9]{4})/([0-9]{1,2})/([^/]+)/?$' => 'index.php?attachment=$matches[4]&post_type=attachment',
     ];
 
     return $attachment_dated + $rules;
 }, 1);
 
 add_action('init', static function () {
-    if (get_option('blueprint_attachment_rewrite_rules_ver') === '3') {
+    if (get_option('blueprint_attachment_rewrite_rules_ver') === '4') {
         return;
     }
     flush_rewrite_rules(false);
-    update_option('blueprint_attachment_rewrite_rules_ver', '3');
+    update_option('blueprint_attachment_rewrite_rules_ver', '4');
 }, 1000);
 
 add_action('after_switch_theme', static function () {
