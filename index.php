@@ -150,7 +150,16 @@
     <?php endif; ?>
     <?php wp_head(); ?>
     <?php echo bp_photo_viewport_style_tag(); ?>
-    <link rel="stylesheet" href="<?php echo get_template_directory_uri(); ?>/css/theme.css">
+    <?php
+    // Webpack output: npm run build:site-wp → wp-content/site/css|js
+    $bp_site_css_path = WP_CONTENT_DIR . '/site/css/theme.css';
+    $bp_site_js_path = WP_CONTENT_DIR . '/site/js/theme.js';
+    $bp_site_css_url = content_url('site/css/theme.css');
+    $bp_site_js_url = content_url('site/js/theme.js');
+    $bp_site_css_ver = is_readable($bp_site_css_path) ? (string) filemtime($bp_site_css_path) : '1';
+    $bp_site_js_ver = is_readable($bp_site_js_path) ? (string) filemtime($bp_site_js_path) : '1';
+    ?>
+    <link rel="stylesheet" href="<?php echo esc_url(add_query_arg('ver', $bp_site_css_ver, $bp_site_css_url)); ?>">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <?php if (is_page('contact')) : ?>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -178,6 +187,6 @@
     <?php echo $content; ?>
     <?php echo bp_photo_viewport_script_tag(); ?>
     <?php wp_footer(); ?>
-    <script src="<?php echo esc_url(get_template_directory_uri() . '/js/theme.js'); ?>"></script>
+    <script src="<?php echo esc_url(add_query_arg('ver', $bp_site_js_ver, $bp_site_js_url)); ?>"></script>
 </body>
 </html>

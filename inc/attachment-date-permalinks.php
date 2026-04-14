@@ -228,11 +228,11 @@ add_filter('rewrite_rules_array', static function (array $rules): array {
 }, 1);
 
 add_action('init', static function () {
-    if (get_option('blueprint_attachment_rewrite_rules_ver') === '4') {
+    if (get_option('blueprint_attachment_rewrite_rules_ver') === '6') {
         return;
     }
     flush_rewrite_rules(false);
-    update_option('blueprint_attachment_rewrite_rules_ver', '4');
+    update_option('blueprint_attachment_rewrite_rules_ver', '6');
 }, 1000);
 
 add_action('after_switch_theme', static function () {
