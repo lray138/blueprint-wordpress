@@ -27,7 +27,9 @@ return function($data = []) {
     .card-bg-img:hover .card-bg-title {
         opacity: 0;
     }
-</style>";
+</style><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/card/bg-img-title.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/card/bg-img-title.ejs

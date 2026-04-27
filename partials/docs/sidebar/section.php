@@ -52,7 +52,9 @@ return function($data = []) {
         text-decoration: none;
         color: var(--wp--preset--color--base);
     }
-</style>";
+</style><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//docs/sidebar/section.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/docs/sidebar/section.ejs

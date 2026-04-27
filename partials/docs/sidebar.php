@@ -72,7 +72,9 @@ return function($data = []) {
                         });
                     });
                 })();
-            </script></div></div></div>";
+            </script></div></div></div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//docs/sidebar.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/docs/sidebar.ejs

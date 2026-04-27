@@ -6,7 +6,9 @@ return function($data = []) {
 	# start data processing
     extract($data);
     # end data processing
-	return "<div class=\"tab-pane fade {$active_class}\" id=\"{$id}\" role=\"tabpanel\" aria-labelledby=\"{$id}-tab\">{$content}</div>";
+	return "<div class=\"tab-pane fade {$active_class}\" id=\"{$id}\" role=\"tabpanel\" aria-labelledby=\"{$id}-tab\">{$content}</div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/tabs-v1/tab-pane.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/tabs-v1/tab-pane.ejs

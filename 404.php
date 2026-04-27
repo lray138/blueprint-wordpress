@@ -9,4 +9,6 @@ $content = renderPageContent(get_the_ID(), [
     "content" => "404",
 ]);
 
+echo "?";
+
 include(get_template_directory() . '/index.php');

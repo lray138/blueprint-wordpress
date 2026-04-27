@@ -8,7 +8,9 @@ return function($data = []) {
 	# start data processing
     extract($data);
     # end data processing
-	return "<h{$level} {$attributes}>{$text}</h{$level}>";
+	return "<h{$level} {$attributes}>{$text}</h{$level}><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/heading/index.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/heading/index.ejs

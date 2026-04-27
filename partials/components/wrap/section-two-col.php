@@ -7,7 +7,9 @@ return function($data = []) {
     extract($data);
     # end data processing
 	return "<section><div class=\"container\"><div class=\"row\"><div class=\"col-12 col-md-6\">{$col_1_content}</div><div class=\"col-12 col-md-6\">{$col_2_content}
-                {$col_2_content2}</div></div></div></section>";
+                {$col_2_content2}</div></div></div></section><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/wrap/section-two-col.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/wrap/section-two-col.ejs

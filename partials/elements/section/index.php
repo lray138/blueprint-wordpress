@@ -24,7 +24,9 @@ return function($data = []) {
     # end data processing
 	return "<section {$attributes}>{$inner_wrap_start}
     {$content}
-    {$inner_wrap_end}</section>";
+    {$inner_wrap_end}</section><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//elements/section/index.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/elements/section/index.ejs

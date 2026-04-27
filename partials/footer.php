@@ -45,7 +45,9 @@ return function($data = []) {
                     display: inline-block;
                 }
                 me a.fire:hover { text-decoration: none; display:inline-block;}
-            </style></div></div></footer>";
+            </style></div></div></footer><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//footer.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/footer.ejs

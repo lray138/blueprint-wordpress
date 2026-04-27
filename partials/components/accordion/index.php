@@ -21,7 +21,9 @@ return function($data = []) {
         $classNames .= " accordion-flush";
     }
     # end data processing
-	return "<div class=\"{$classNames}\" id=\"{$id}\" {$attributes}>{$items}</div>";
+	return "<div class=\"{$classNames}\" id=\"{$id}\" {$attributes}>{$items}</div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/accordion/index.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/accordion/index.ejs

@@ -147,6 +147,7 @@ function handle_file(Kvm $partial): Str {
 }
 
 function concatSectionPartials( Kvm $section ): Str {
+
     // complex_field is the key of the partial to use
     $out = $section->mprop('complex_field')
         ->bind(fn(Str $key) => $section->mprop($key))
@@ -754,7 +755,7 @@ function tryCarbonPostMeta(...$args): Result
         $r = carbon_get_post_meta($page_id, $field_id);
         return is_null($r) 
             ? Result::err("Carbon post meta not found") 
-            : Result::ok(Lst::of($r));
+            : Result::ok(wrap($r)); // this was Lst for some reason
     };
 
     return call_user_func_array(curryN(2, $f), $args);

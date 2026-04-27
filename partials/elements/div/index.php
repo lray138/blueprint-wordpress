@@ -16,7 +16,9 @@ return function($data = []) {
         }
     }
     # end data processing
-	return "<div {$attributes}>{$content}</div>";
+	return "<div {$attributes}>{$content}</div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//elements/div/index.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/elements/div/index.ejs

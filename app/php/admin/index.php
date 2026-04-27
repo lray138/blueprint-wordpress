@@ -59,34 +59,71 @@ add_action('admin_enqueue_scripts', function () {
     $post_id = isset($_GET['post']) ? (int) $_GET['post'] : 0;
     if (!$post_id) return;
 
-    // Verify it has at least 1 child page
+    $parent_id = (int) wp_get_post_parent_id($post_id);
+    $add_sibling_url = $parent_id > 0
+        ? admin_url('post-new.php?post_type=page&parent_id=' . $parent_id)
+        : admin_url('post-new.php?post_type=page');
+
     $has_children = (bool) get_posts([
         'post_type'      => 'page',
         'post_parent'    => $post_id,
-        'post_status'    => 'any',          // include drafts/private children too
+        'post_status'    => 'any',
         'fields'         => 'ids',
-        'posts_per_page' => 1,              // existence check
+        'posts_per_page' => 1,
         'no_found_rows'  => true,
     ]);
-
-    if (!$has_children) return;
 
     $view_children_url = add_query_arg([
         'post_type'   => 'page',
         'post_parent' => $post_id,
     ], admin_url('edit.php'));
 
-    $view_children_url_json = wp_json_encode($view_children_url);
+    $view_parent_url = '';
+    if ($parent_id > 0) {
+        $link = get_edit_post_link($parent_id, '');
+        if (is_string($link) && $link !== '') {
+            $view_parent_url = $link;
+        }
+    }
+    $has_parent = $view_parent_url !== '';
+
+    $add_sibling_url_json     = wp_json_encode($add_sibling_url);
+    $view_children_url_json   = wp_json_encode($view_children_url);
+    $view_parent_url_json     = wp_json_encode($view_parent_url);
+    $has_children_json        = wp_json_encode($has_children);
+    $has_parent_json          = wp_json_encode($has_parent);
 
     $js = <<<JS
 document.addEventListener('DOMContentLoaded', function () {
   const addNew = document.querySelector('.wrap .page-title-action');
   if (!addNew) return;
 
-  const btn = document.createElement('a');
-  btn.className = addNew.className;
-  btn.href = {$view_children_url_json};
-  btn.textContent = 'View Children';
+  let anchor = addNew;
+
+  const sibling = document.createElement('a');
+  sibling.className = addNew.className;
+  sibling.href = {$add_sibling_url_json};
+  sibling.textContent = 'Add Sibling';
+  anchor.insertAdjacentElement('afterend', sibling);
+  anchor = sibling;
+
+  if ({$has_parent_json}) {
+    const viewPar = document.createElement('a');
+    viewPar.className = addNew.className;
+    viewPar.href = {$view_parent_url_json};
+    viewPar.textContent = 'View Parent';
+    anchor.insertAdjacentElement('afterend', viewPar);
+    anchor = viewPar;
+  }
+
+  if (!{$has_children_json}) return;
+
+  const viewCh = document.createElement('a');
+  viewCh.className = addNew.className;
+  viewCh.href = {$view_children_url_json};
+  viewCh.textContent = 'View Children';
+  anchor.insertAdjacentElement('afterend', viewCh);
+  anchor = viewCh;
 
   const copy = document.createElement('a');
   copy.className = addNew.className;
@@ -108,8 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.body.removeChild(input);
   });
 
-  addNew.insertAdjacentElement('afterend', btn);
-  btn.insertAdjacentElement('afterend', copy);
+  anchor.insertAdjacentElement('afterend', copy);
 });
 JS;
 
@@ -124,6 +160,19 @@ add_action('pre_get_posts', function (WP_Query $q) {
     // Only on Pages list screen: edit.php?post_type=page
     $screen = function_exists('get_current_screen') ? get_current_screen() : null;
     if (!$screen || $screen->id !== 'edit-page') return;
+
+    // ?all=1 — list all pages; ignore post_parent (including post_parent=0 from the default redirect)
+    if (isset($_GET['all'])) {
+        $q->set('post_parent', '');
+        return;
+    }
+
+    // Search must match pages anywhere in the hierarchy; parent filter would hide non-matching parents’ children.
+    $search = $q->get('s');
+    if (is_string($search) && trim($search) !== '') {
+        $q->set('post_parent', '');
+        return;
+    }
 
     // Read the desired parent filter from the URL
     $parent_id = isset($_GET['post_parent']) ? (int) $_GET['post_parent'] : 0;

@@ -49,7 +49,9 @@ carousel.addEventListener(\"slid.bs.carousel\", () => {
 });
 
 });
-</script>";
+</script><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/carousel/index.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/carousel/index.ejs

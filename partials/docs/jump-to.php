@@ -20,7 +20,9 @@ return function($data = []) {
                 top: 2rem;
                 align-self: flex-start;
             }
-        </style></div></div>";
+        </style></div></div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//docs/jump-to.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/docs/jump-to.ejs

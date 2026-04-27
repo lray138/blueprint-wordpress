@@ -54,7 +54,9 @@ return function($data = []) {
     me ol {
         font-size: .85em;
     }
-</style>";
+</style><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/breadcrumbs/index.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/breadcrumbs/index.ejs

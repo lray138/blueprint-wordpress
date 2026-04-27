@@ -9,7 +9,9 @@ return function($data = []) {
 
     $tab_items = $tab_content;
     # end data processing
-	return "<!-- Tabs Navigation --><ul class=\"nav nav-tabs mb-0\" id=\"accordionTabs\" role=\"tablist\">{$nav_items}</ul><!-- Tab Content --><div class=\"tab-content border-start border-end border-bottom rounded-bottom rounded-top-end p-3\" id=\"accordionTabContent\">{$tab_items}</div>";
+	return "<!-- Tabs Navigation --><ul class=\"nav nav-tabs mb-0\" id=\"accordionTabs\" role=\"tablist\">{$nav_items}</ul><!-- Tab Content --><div class=\"tab-content border-start border-end border-bottom rounded-bottom rounded-top-end p-3\" id=\"accordionTabContent\">{$tab_items}</div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/tabs/index.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/tabs/index.ejs

@@ -8,7 +8,9 @@ return function($data = []) {
 	# start data processing
     extract($data);
     # end data processing
-	return "<div data-pattern=\"info-stack\">{$content}</div>";
+	return "<div data-pattern=\"info-stack\">{$content}</div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//patterns/info-stack/index.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/patterns/info-stack/index.ejs

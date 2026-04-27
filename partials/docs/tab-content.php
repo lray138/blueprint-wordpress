@@ -43,7 +43,9 @@ Accordion Item #3
 &lt;/div&gt;
 &lt;/div&gt;
 &lt;/div&gt;
-&lt;/div&gt;</code></pre></div></div>";
+&lt;/div&gt;</code></pre></div></div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//docs/tab-content.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/docs/tab-content.ejs

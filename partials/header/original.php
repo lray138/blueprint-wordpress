@@ -64,7 +64,9 @@ return function($data = []) {
     }
 
     # end data processing
-	return "<section class=\"header {$section_extra_classes}\" {$section_attrs}><div class=\"container\"><header class=\"d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 mb-3 border-bottom {$header_class_extras}\"><div class=\"col-md-3 mb-2 mb-md-0\">{$site_name_anchor}</div>{$nav_links}<div class=\"col-md-3 text-end d-flex align-items-center justify-content-end gap-2\">{$flex_end_content}</div></header></div></section>";
+	return "<section class=\"header {$section_extra_classes}\" {$section_attrs}><div class=\"container\"><header class=\"d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 mb-3 border-bottom {$header_class_extras}\"><div class=\"col-md-3 mb-2 mb-md-0\">{$site_name_anchor}</div>{$nav_links}<div class=\"col-md-3 text-end d-flex align-items-center justify-content-end gap-2\">{$flex_end_content}</div></header></div></section><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//header/original.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/header/original.html

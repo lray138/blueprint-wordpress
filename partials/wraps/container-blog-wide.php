@@ -6,7 +6,9 @@ return function($data = []) {
 	# start data processing
     extract($data);
     # end data processing
-	return "<div class=\"container\"><div class=\"row justify-content-center\"><div class=\"col-12 col-lg-10 col-xl-9\">{$content}</div></div></div>";
+	return "<div class=\"container\"><div class=\"row justify-content-center\"><div class=\"col-12 col-lg-10 col-xl-9\">{$content}</div></div></div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//wraps/container-blog-wide.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/wraps/container-blog-wide.ejs

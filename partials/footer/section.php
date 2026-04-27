@@ -7,7 +7,9 @@ return function($data = []) {
     extract($data);
     # end data processing
 	return "{$heading}
-{$list_items}";
+{$list_items}<!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//footer/section.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/footer/section.ejs

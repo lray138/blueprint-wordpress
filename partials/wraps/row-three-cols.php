@@ -6,7 +6,9 @@ return function($data = []) {
 	# start data processing
     extract($data);
     # end data processing
-	return "<div class=\"row g-3\"><div class=\"col-12 col-md-4\">{$col_1_content}</div><div class=\"col-12 col-md-4\">{$col_2_content}</div><div class=\"col-12 col-md-4\">{$col_3_content}</div></div>";
+	return "<div class=\"row g-3\"><div class=\"col-12 col-md-4\">{$col_1_content}</div><div class=\"col-12 col-md-4\">{$col_2_content}</div><div class=\"col-12 col-md-4\">{$col_3_content}</div></div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//wraps/row-three-cols.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/wraps/row-three-cols.ejs

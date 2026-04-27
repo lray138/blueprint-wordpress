@@ -45,7 +45,9 @@ return function($data = []) {
       color: #fff;
     }
     
-</style>";
+</style><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/card/bg-cover-blog.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/card/bg-cover-blog.ejs

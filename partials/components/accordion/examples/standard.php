@@ -23,7 +23,9 @@ return function($data = []) {
             content: \"This is the third item's accordion body. It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the<code>.accordion-body</code>, though the transition does limit overflow.\"
         }
     ]
-}) %></div>";
+}) %></div><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/accordion/examples/standard.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/accordion/examples/standard.ejs

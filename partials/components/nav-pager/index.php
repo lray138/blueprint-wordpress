@@ -41,7 +41,9 @@ return function($data = []) {
         box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
     }
     
-</style>";
+</style><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/nav-pager/index.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/nav-pager/index.ejs

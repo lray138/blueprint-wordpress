@@ -18,7 +18,9 @@ return function($data = []) {
 .htmx-request .label {
   opacity: 0.6;
 }
-</style>";
+</style><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/button/htmx-submit.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/button/htmx-submit.ejs

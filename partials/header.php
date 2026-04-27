@@ -96,7 +96,9 @@ return function($data = []) {
                                 <a class=\"dropdown-item\" href=\"#\">Something else here</a>
                             </li>
                         </ul>
-                    </li> --></ul><div class=\"col-md-3 text-end mx-auto\">{$flex_end_content}</div></div></div></div></nav>";
+                    </li> --></ul><div class=\"col-md-3 text-end mx-auto\">{$flex_end_content}</div></div></div></div></nav><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//header.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/header.ejs

@@ -6,7 +6,9 @@ return function($data = []) {
 	# start data processing
     extract($data);
     # end data processing
-	return "<{$list_type} {$attributes}>{$list_items}</{$list_type}>";
+	return "<{$list_type} {$attributes}>{$list_items}</{$list_type}><!-- dist:
+/Users/lray/Sites/babygirlatl/wp-content/themes/blueprint/partials//components/list/index.php
+-->";
 };
 
 # src: webpack/src/blueprint/partials/components/list/index.ejs

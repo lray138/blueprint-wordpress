@@ -1,9 +1,32 @@
+<?php
+    use function lray138\G2\{wrap, dump}; 
+    use lray138\G2\{Kvm, Lst};
+
+    $page_title = isset($page_title) ? $page_title : '';
+    $bp_html_class = isset($bp_html_class) ? trim((string) $bp_html_class) : '';
+
+    $t = tryCarbonPostMeta("page_config_items", get_the_ID())
+        ->map(function(Lst $l) {
+            return $l->filter(function(array $kvm) {
+                return wrap($kvm)->prop("_type")->get() === "html";
+            })
+            ->head();
+        })
+        ->map(function($k) {
+            if (is_null($k)) return "";
+            $t = $k->prop($k->prop("_type")->append("_attrs"));
+            return renderAttributes($t);
+        })
+        ->getOrElse("");
+
+   // dump($t);
+?>
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" <?= $t ?> data-bs-theme="light"<?php echo $bp_html_class !== '' ? ' class="' . esc_attr($bp_html_class) . '"' : ''; ?>>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $page_title; ?></title>
+    <title><?php echo $page_title ?></title>
     <?php
     $bp_is_photo_attachment = bp_is_photo_attachment_viewport();
 
@@ -183,7 +206,7 @@
         $bp_body_class .= ' bp-edit';
     }
 ?>
-<body <?php body_class($bp_body_class); ?><?= $admin_attr; ?> style="background-color:rgb(240, 240, 240);">
+<body <?php body_class($bp_body_class); ?><?= $admin_attr; ?>>
     <?php echo $content; ?>
     <?php echo bp_photo_viewport_script_tag(); ?>
     <?php wp_footer(); ?>
