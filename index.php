@@ -1,11 +1,17 @@
 <?php
-    use function lray138\G2\{wrap, dump}; 
-    use lray138\G2\{Kvm, Lst};
+    use function lray138\G2\wrap;
+    use lray138\G2\{Kvm, Lst, Result, Either};
 
     $page_title = isset($page_title) ? $page_title : '';
     $bp_html_class = isset($bp_html_class) ? trim((string) $bp_html_class) : '';
 
-    $t = tryCarbonPostMeta("page_config_items", get_the_ID())
+    // Main-query ID: after renderPageContent() the global $post may not match this page.
+    $bp_context_post_id = (int) get_queried_object_id();
+    if ($bp_context_post_id === 0) {
+        $bp_context_post_id = (int) get_the_ID();
+    }
+
+    $t = tryCarbonPostMeta("page_config_items", $bp_context_post_id)
         ->map(function(Lst $l) {
             return $l->filter(function(array $kvm) {
                 return wrap($kvm)->prop("_type")->get() === "html";
@@ -19,7 +25,84 @@
         })
         ->getOrElse("");
 
-   // dump($t);
+    /**
+     * Main query id first, then loop/global post (after renderPageContent() may have moved $post).
+     */
+    function tryQueriedObjectId(): Result
+    {
+        $page_id = (int) get_queried_object_id();
+    
+        if ($page_id !== 0) {
+            return Result::ok($page_id);
+        }
+    
+        $page_id = (int) get_the_ID();
+    
+        if ($page_id !== 0) {
+            return Result::ok($page_id);
+        }
+    
+        return Result::err('No post id in template context');
+    }
+    
+    function tryPostThumbnailId(int $post_id): Result
+    {
+        $thumbnail_id = (int) get_post_thumbnail_id($post_id);
+    
+        return Result::ok(
+            $thumbnail_id !== 0
+                ? Either::right($thumbnail_id)
+                : Either::left('No thumbnail id found')
+        );
+    }
+    
+    function tryLargeImageUrl(int $thumbnail_id): Result
+    {
+        $url = wp_get_attachment_image_url($thumbnail_id, 'large');
+    
+        return $url !== false
+            ? Result::ok($url)
+            : Result::err('Could not resolve large image URL');
+    }
+    
+    function getStandard(): string
+    {
+        $uploads = wp_get_upload_dir();
+    
+        return $uploads['baseurl'] . '/2026/04/everlasting_og.jpg';
+    }
+    
+    /**
+     * Single OG/Twitter image URL: photo attachment page → full file; else featured large or fallback asset.
+     */
+    function bp_resolve_share_image_url_force(): string
+    {
+        if (function_exists('bp_is_photo_attachment_viewport') && bp_is_photo_attachment_viewport()) {
+            $att_id = (int) get_queried_object_id();
+            if ($att_id) {
+                $url = wp_get_attachment_image_url($att_id, 'full');
+                if ($url !== false && $url !== '') {
+                    return $url;
+                }
+            }
+        }
+
+        return tryQueriedObjectId()
+            ->bind(fn (int $post_id) => tryPostThumbnailId($post_id))
+            ->bind(function ($either) {
+                return $either->fold(
+                    fn ($_reason) => Result::ok(getStandard()),
+                    fn (int $thumbnail_id) => tryLargeImageUrl($thumbnail_id)
+                );
+            })
+            ->fold(
+                fn ($_err) => getStandard(),
+                fn (string $url) => $url
+            );
+    }
+
+    $bp_share_image_url_force = bp_resolve_share_image_url_force();
+
 ?>
 <!DOCTYPE html>
 <html lang="en" <?= $t ?> data-bs-theme="light"<?php echo $bp_html_class !== '' ? ' class="' . esc_attr($bp_html_class) . '"' : ''; ?>>
@@ -30,41 +113,14 @@
     <?php
     $bp_is_photo_attachment = bp_is_photo_attachment_viewport();
 
-    $bp_share_image_url = '';
+    $bp_share_image_url = trim((string) $bp_share_image_url_force);
     $bp_share_image_w = 0;
     $bp_share_image_h = 0;
-
-    if (is_front_page()) {
-        // Home: default social image = custom logo, then front-page featured image, then site icon.
-        $bp_logo_id = (int) get_theme_mod('custom_logo');
-        if ($bp_logo_id) {
-            $bp_src = wp_get_attachment_image_src($bp_logo_id, 'full');
-            if (is_array($bp_src) && ! empty($bp_src[0])) {
-                $bp_share_image_url = $bp_src[0];
-                $bp_share_image_w = (int) $bp_src[1];
-                $bp_share_image_h = (int) $bp_src[2];
-            }
-        }
-        if ($bp_share_image_url === '' && is_singular() && has_post_thumbnail()) {
-            $bp_thumb_id = (int) get_post_thumbnail_id();
-            if ($bp_thumb_id) {
-                $bp_src = wp_get_attachment_image_src($bp_thumb_id, 'full');
-                if (is_array($bp_src) && ! empty($bp_src[0])) {
-                    $bp_share_image_url = $bp_src[0];
-                    $bp_share_image_w = (int) $bp_src[1];
-                    $bp_share_image_h = (int) $bp_src[2];
-                }
-            }
-        }
-        if ($bp_share_image_url === '' && function_exists('get_site_icon_url')) {
-            $bp_share_image_url = (string) get_site_icon_url(512);
-        }
-    } elseif ($bp_is_photo_attachment) {
+    if ($bp_is_photo_attachment) {
         $bp_att_id = (int) get_queried_object_id();
         if ($bp_att_id) {
             $bp_src = wp_get_attachment_image_src($bp_att_id, 'full');
             if (is_array($bp_src) && ! empty($bp_src[0])) {
-                $bp_share_image_url = $bp_src[0];
                 $bp_share_image_w = (int) $bp_src[1];
                 $bp_share_image_h = (int) $bp_src[2];
             }
@@ -74,21 +130,12 @@
         if ($bp_thumb_id) {
             $bp_src = wp_get_attachment_image_src($bp_thumb_id, 'full');
             if (is_array($bp_src) && ! empty($bp_src[0])) {
-                $bp_share_image_url = $bp_src[0];
                 $bp_share_image_w = (int) $bp_src[1];
                 $bp_share_image_h = (int) $bp_src[2];
             }
         }
-    } elseif (($bp_logo_id = (int) get_theme_mod('custom_logo'))) {
-        $bp_src = wp_get_attachment_image_src($bp_logo_id, 'full');
-        if (is_array($bp_src) && ! empty($bp_src[0])) {
-            $bp_share_image_url = $bp_src[0];
-            $bp_share_image_w = (int) $bp_src[1];
-            $bp_share_image_h = (int) $bp_src[2];
-        }
-    } elseif (function_exists('get_site_icon_url')) {
-        $bp_share_image_url = (string) get_site_icon_url(512);
     }
+
 
     $bp_normalize_og_image_url = static function (string $url): string {
         $url = trim($url);
@@ -190,10 +237,10 @@
     
 </head>
 <?php
-    $can_edit = is_user_logged_in() && current_user_can('edit_post', get_the_ID());
+    $can_edit = is_user_logged_in() && current_user_can('edit_post', $bp_context_post_id);
 
     $admin_attr = $can_edit
-        ? ' data-admin-url="' . esc_url(admin_url()) . '" data-post-id="' . esc_attr(get_the_ID()) . '"'
+        ? ' data-admin-url="' . esc_url(admin_url()) . '" data-post-id="' . esc_attr((string) $bp_context_post_id) . '"'
         : '';
 
     $content = isset($content) ? $content : "";

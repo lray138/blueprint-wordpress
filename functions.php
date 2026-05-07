@@ -700,6 +700,7 @@ function getGalleryPages($category_slug = null): Lst {
 function categoryPagesToCard(Lst $pages): Str {
 
     return $pages->map(function(WP_Post $page) {
+
         return [
             "title" => $page->post_title,
             "href" => get_permalink($page->ID),
@@ -708,18 +709,23 @@ function categoryPagesToCard(Lst $pages): Str {
             "simple" => true,
         ];
         })
+        
         ->map(function($x) {
             return tryPartial("/site/partials/components/gallery-card.php", $x)
                 ->getOrElse("");
         })
+        
         ->join("")
         ->map(function($x) {
-            return tryPartial("/site/partials/components/gallery-card-grid.php", [
+
+            $out = tryPartial("/site/partials/components/gallery-card-grid.php", [
                 "cardsHtml" => $x,
             ])
             ->getOrElse("");
-        });
 
+            return $out;
+        })
+        ;
 }
 
 function galleryPagesToCard(Lst $pages): Str {
