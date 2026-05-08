@@ -28,22 +28,6 @@
     /**
      * Main query id first, then loop/global post (after renderPageContent() may have moved $post).
      */
-    function tryQueriedObjectId(): Result
-    {
-        $page_id = (int) get_queried_object_id();
-    
-        if ($page_id !== 0) {
-            return Result::ok($page_id);
-        }
-    
-        $page_id = (int) get_the_ID();
-    
-        if ($page_id !== 0) {
-            return Result::ok($page_id);
-        }
-    
-        return Result::err('No post id in template context');
-    }
     
     function tryPostThumbnailId(int $post_id): Result
     {
@@ -65,10 +49,9 @@
             : Result::err('Could not resolve large image URL');
     }
     
-    function getStandard(): string
+    function getDefaultOgImageUrl(): string
     {
         $uploads = wp_get_upload_dir();
-    
         return $uploads['baseurl'] . '/2026/04/everlasting_og.jpg';
     }
     
@@ -91,12 +74,12 @@
             ->bind(fn (int $post_id) => tryPostThumbnailId($post_id))
             ->bind(function ($either) {
                 return $either->fold(
-                    fn ($_reason) => Result::ok(getStandard()),
+                    fn ($_reason) => Result::ok(getDefaultOgImageUrl()),
                     fn (int $thumbnail_id) => tryLargeImageUrl($thumbnail_id)
                 );
             })
             ->fold(
-                fn ($_err) => getStandard(),
+                fn ($_err) => getDefaultOgImageUrl(),
                 fn (string $url) => $url
             );
     }
@@ -253,10 +236,10 @@
         $bp_body_class .= ' bp-edit';
     }
 ?>
-<body <?php body_class($bp_body_class); ?><?= $admin_attr; ?>>
-    <?php echo $content; ?>
-    <?php echo bp_photo_viewport_script_tag(); ?>
-    <?php wp_footer(); ?>
-    <script src="<?php echo esc_url(add_query_arg('ver', $bp_site_js_ver, $bp_site_js_url)); ?>"></script>
-</body>
+    <body <?php body_class($bp_body_class); ?><?= $admin_attr; ?>>
+        <?php echo $content; ?>
+        <?php echo bp_photo_viewport_script_tag(); ?>
+        <?php wp_footer(); ?>
+        <script src="<?php echo esc_url(add_query_arg('ver', $bp_site_js_ver, $bp_site_js_url)); ?>"></script>
+    </body>
 </html>

@@ -2,7 +2,7 @@
 /**
  * Template Name: Gallery Page
  */
-
+use lray138\G2\Result;
 
 $page_title = get_the_title($page_id);
 
@@ -26,7 +26,14 @@ foreach ($attachment_posts as $post) {
         ->getOrElse('partial not found');
 }
 
-$grid_html = '<div id="gallery" class="muuri-grid muuri-grid--max-cols-3 muuri" data-muuri-grid="true">'
+
+$test = tryPartial("/blueprint/partials/patterns/page-header/index.php", [
+    "class_names" => "text-center",
+    "heading" => tryQueriedObjectId()->map('get_the_title')->getOrElse(''),
+])
+    ->getOrElse('a');
+
+$grid_html = $test . '<div id="gallery" class="muuri-grid muuri-grid--max-cols-3 muuri" data-muuri-grid="true">'
     . $items_html
     . '</div>';
 

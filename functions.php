@@ -1,6 +1,6 @@
 <?php
 
-use lray138\G2\{Str, Lst, Kvm};
+use lray138\G2\{Str, Lst, Kvm, Result};
 use function lray138\G2\dump;
 
 require "vendor/autoload.php";
@@ -840,4 +840,21 @@ if (! function_exists('kvm_attrs_reduce_to_string')) {
 
         return $acc;
     }
+}
+
+function tryQueriedObjectId(): Result
+{
+    $page_id = (int) get_queried_object_id();
+
+    if ($page_id !== 0) {
+        return Result::ok($page_id);
+    }
+
+    $page_id = (int) get_the_ID();
+
+    if ($page_id !== 0) {
+        return Result::ok($page_id);
+    }
+
+    return Result::err('No post id in template context');
 }
